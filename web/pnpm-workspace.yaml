@@ -1,0 +1,8 @@
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+minimumReleaseAgeExclude:
+  - '@babel/helpers'
+  - '@babel/traverse'
+  - caniuse-lite
+  - electron-to-chromium
