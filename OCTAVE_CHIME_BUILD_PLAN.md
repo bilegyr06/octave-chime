@@ -16,6 +16,8 @@
 | Decision | Choice |
 |---|---|
 | Stack | **Next.js (UI only)** + **Express (API / services / cron / webhooks)**, TypeScript throughout, **Prisma + Neon PostgreSQL** |
+| Package manager | **pnpm** via corepack — npm 12's resolver wedges (CPU spin, no progress) on this machine; abandoned mid-Phase 0 |
+| Prisma version | **6.19.3 pinned** — Prisma 7's dependency tree (studio-core, cloud SDKs) was excessively heavy |
 | Location | Inside `octave chime docs\` → `api\` and `web\` folders |
 | Messaging | **Termii** behind an adapter: `TERMII_MODE=mock` now, `live` later. Free-form primary, `TERMII_TEMPLATE_ID` fallback if configured |
 | Chat bot | Fully real inbound bot (webhook-driven), sequential text replies (no interactive buttons) |
@@ -100,6 +102,15 @@ octave chime docs\
 | `app/routes/` (APIRouter) | `src/routes/` | one Express Router per resource |
 | `app/workers/` | `src/workers/` | cron scheduler, summary job, retries |
 | `app/integrations/` | `src/adapters/` | Termii (mock/live), future Mono |
+
+### Repository model (single repo, monorepo deploy)
+
+One git repository tracks the plan docs, `api/`, and `web/` together
+(`main` + `develop` per §7). `api/` carries its own nested `.gitignore`
+(git honours nested ignore files). Deployment splits by root directory:
+
+- **Vercel** → Root Directory = `web`
+- **Render** → Root Directory = `api` (web service + cron)
 
 **Import rules (folders are not decorative):**
 
@@ -235,7 +246,7 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
 
 | # | Phase | Deliverables | Acceptance gate | Est. |
 |---|---|---|---|---|
-| 0 | Scaffold | FastAPI-style `api/src/` tree (§2) + `web/` + `api/scripts/`, Prisma init, Neon connected, `.env.example`, basic layout/navigation, git init | both apps `npm run dev`, DB ping succeeds | 2h |
+| 0 | Scaffold | FastAPI-style `api/src/` tree (§2) + `web/` + `api/scripts/`, Prisma init, Neon connected, `.env.example`, basic layout/navigation, git init | both apps `pnpm dev`, DB ping succeeds | 2h |
 | 1 | Data layer | 8 schemas (+ §4 corrections), migration, seeds (banks/admins/customers/transactions/notifications) | Prisma Studio shows seeded tenants | 3h |
 | 2 | Admin API + auth | login, JWT, platform admin, tenant isolation, dashboard metrics, customers CRUD, notifications list | admin can only query own bank's rows | 5h |
 | 3 | Termii + bot | adapter (mock/live), `POST /webhooks/termii`, bot engine state machine, secure token service, `scripts/mock-inbound.js` | `mock-inbound.js START` → full enrollment → secure link issued, replies logged | 6h |
