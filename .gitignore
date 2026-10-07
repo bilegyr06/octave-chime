@@ -1,2 +1,16 @@
 implementation_details/
 .env
+.env.*
+!.env.example
+
+# app repositories live in their own git repos
+/api/
+/web/
+
+node_modules/
+.next/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
