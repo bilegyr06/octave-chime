@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { config } from "./core/config";
 import { routes } from "./routes";
+import { webhooksRouter } from "./routes/webhooks";
+import { enrollRouter } from "./routes/enroll";
 import { errorHandler, notFoundHandler } from "./core/errors";
 
 export function createApp() {
@@ -15,7 +17,9 @@ export function createApp() {
   );
   app.use(express.json({ limit: "1mb" }));
 
+  app.use("/webhooks", webhooksRouter);
   app.use("/api", routes);
+  app.use("/api/enroll", enrollRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

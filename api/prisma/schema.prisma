@@ -89,6 +89,17 @@ enum AuditActorType {
   customer
 }
 
+enum LinkTokenMode {
+  enroll
+  reconsent
+  relink
+}
+
+enum BotDirection {
+  inbound
+  outbound
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -149,6 +160,8 @@ model Customer {
   transactions     Transaction[]
   notifications    Notification[]
   dailySummaries   DailySummary[]
+  linkTokens       LinkToken[]
+  botMessages      BotMessage[]
 
   @@index([bankId])
   @@index([serviceStatus])
@@ -265,4 +278,36 @@ model AuditLog {
 
   @@index([bankId, createdAt])
   @@index([actorType, actorId])
+}
+
+model LinkToken {
+  id         String         @id @default(cuid())
+  token      String         @unique
+  mode       LinkTokenMode
+  customerId String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([expiresAt])
+}
+
+model BotMessage {
+  id         String       @id @default(cuid())
+  direction  BotDirection
+  // Termii inbound webhook id; unique so duplicate webhooks are no-ops.
+  messageId  String?      @unique
+  sender     String
+  recipient  String?
+  text       String
+  customerId String?
+  createdAt  DateTime     @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@index([sender, createdAt])
 }
