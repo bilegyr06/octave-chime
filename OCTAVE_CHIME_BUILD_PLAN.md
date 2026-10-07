@@ -1,0 +1,287 @@
+# Octave Chime — Build Plan (48h, mock-first)
+
+> Companion document to `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md` (the product spec).
+> This file records the **approved build decisions**, architecture, scope corrections,
+> phase schedule, and risks so the plan survives beyond any single chat session.
+
+**Status:** Approved
+**Spec source of truth:** `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`
+**Deadline:** ~48 hours from kickoff, public URL required
+**Scope:** Nothing cut — full §17 acceptance criteria of the spec
+
+---
+
+## 1. Locked Decisions
+
+| Decision | Choice |
+|---|---|
+| Stack | **Next.js (UI only)** + **Express (API / services / cron / webhooks)**, TypeScript throughout, **Prisma + Neon PostgreSQL** |
+| Location | Inside `octave chime docs\` → `api\` and `web\` folders |
+| Messaging | **Termii** behind an adapter: `TERMII_MODE=mock` now, `live` later. Free-form primary, `TERMII_TEMPLATE_ID` fallback if configured |
+| Chat bot | Fully real inbound bot (webhook-driven), sequential text replies (no interactive buttons) |
+| Auth | Email/password for bank admins + platform admin role (JWT httpOnly cookie) |
+| Scheduler | Real cron at **21:00 Africa/Lagos** + admin "Run Daily Summary Now" demo action |
+| Design direction | Spec §15: fintech-ops style, dashboard-first, WhatsApp green only as accent |
+| Deployment | **Vercel (web UI)** + **Render (Express API + cron + webhook)**, managed **Neon** Postgres |
+| Enrollment links | Live on the **Vercel UI domain**; UI calls the Render API |
+| Chat visibility | Phone only in live mode (no on-screen chat mirror) + **dev-only mock console** when `TERMII_MODE=mock` |
+| Recipient numbers | Real customers = whoever messages the bot number and completes onboarding |
+
+---
+
+## 2. Architecture
+
+```
+[User phone / Termii]  ←mock: scripts/mock-inbound.js→  Express (Render)
+                                          │  POST /webhooks/termii
+                                          ├─ BotEngine (dialog state machine)
+                                          ├─ Services: bank / customer / account-linking
+                                          │            / transaction / notification / summary
+                                          ├─ TermiiAdapter: mock (console) | live (fetch)
+                                          ├─ node-cron 21:00 Africa/Lagos
+                                          └─ Prisma → Neon PostgreSQL
+
+Next.js (Vercel) ── fetch ──→ Express API
+  login · dashboard · customers · transactions · notifications · settings
+  /enroll/[token] · /consent/[token] · /status   (secure web surfaces only)
+```
+
+### Folder layout (FastAPI-style layering)
+
+The API is organised like a FastAPI application — every folder exists for a
+reason, and the import rules below keep it that way.
+
+```
+octave chime docs\
+├── OCTAVE_CHIME_IMPLEMENTATION_PLAN.md    # product spec (unchanged)
+├── OCTAVE_CHIME_BUILD_PLAN.md             # this file
+├── octave-chime-platform.html             # design reference only
+├── octave-chime-whatsapp.zip              # prior Express/WhatsApp reference only
+├── api\
+│   ├── prisma\
+│   │   ├── schema.prisma                  # DB source of truth
+│   │   ├── migrations\
+│   │   └── seed.ts
+│   ├── scripts\
+│   │   ├── mock-inbound.js                # pushes Termii inbound payloads
+│   │   └── e2e-acceptance.js
+│   └── src\
+│       ├── server.ts                      # entrypoint (≈ uvicorn)
+│       ├── app.ts                         # createApp(): middleware + routers (≈ create_app)
+│       ├── core\                          # config, logger, errors, security(jwt), constants
+│       ├── db\                            # prisma.ts client singleton, tenantScope.ts
+│       ├── models\                        # domain types, enums, Prisma→domain mappers
+│       ├── schemas\                       # zod request/response validation (≈ Pydantic)
+│       ├── services\                      # business logic (no Express types)
+│       │   ├── bank.service.ts
+│       │   ├── customer.service.ts
+│       │   ├── accountLinking.service.ts
+│       │   ├── transaction.service.ts
+│       │   ├── notification.service.ts
+│       │   ├── summary.service.ts
+│       │   └── bot\                        # dialog engine + handlers (≈ bot routers)
+│       ├── routes\                        # thin Express Routers (parse → service → respond)
+│       ├── adapters\                      # termii.adapter.ts (mock|live), mono.adapter.ts
+│       └── workers\                       # scheduler.ts (node-cron 21:00 Lagos), summary.worker.ts
+├── web\                                   # Next.js — idiomatic App Router structure
+│   └── src\{app, components, lib}\         # not FastAPI-layered
+```
+
+**FastAPI → Express mapping**
+
+| FastAPI | Express API | Holds |
+|---|---|---|
+| `app/main.py` + `create_app()` | `src/server.ts` + `src/app.ts` | entrypoint + app factory with middleware mount order |
+| `app/core/` | `src/core/` | config/env, logger, error handler, JWT/security, constants |
+| `app/db/` + session/deps | `src/db/` | Prisma client singleton, tenant-scoping helpers |
+| `app/models/` (SQLAlchemy) | `prisma/schema.prisma` + `src/models/` | DB truth in Prisma; domain types/enums/mappers in `src/models/` |
+| `app/schemas/` (Pydantic) | `src/schemas/` | Zod schemas + `z.infer` TS types |
+| `app/services/` | `src/services/` | business logic only |
+| `app/routes/` (APIRouter) | `src/routes/` | one Express Router per resource |
+| `app/workers/` | `src/workers/` | cron scheduler, summary job, retries |
+| `app/integrations/` | `src/adapters/` | Termii (mock/live), future Mono |
+
+**Import rules (folders are not decorative):**
+
+- `routes/` may import `schemas/` + `services/` only — **never Prisma directly**.
+- `services/` may import `models/`, `schemas/`, `db/`, `adapters/` — **never Express**.
+- `services/` return **domain objects** (via mappers), not raw Prisma types.
+- `workers/` only call `services/` — the cron job is just a service caller.
+- `adapters/` is the only place with outbound HTTP.
+- Every cross-tenant query goes through `db/tenantScope`.
+- `web/` follows idiomatic Next.js: `app/` routes, `components/`, `lib/`
+  (API client + local types); the layering discipline applies to the API only.
+
+### Environment template
+
+```bash
+DATABASE_URL=postgresql://...                 # Neon
+TERMII_MODE=mock                              # mock | live
+TERMII_API_KEY=placeholder
+TERMII_BASE_URL=https://api.termii.com
+TERMII_DEVICE_ID=dev-placeholder
+TERMII_TEMPLATE_ID=                           # optional; enables proactive template path
+SESSION_SECRET=
+APP_URL=https://<vercel-domain>               # enrollment links live here
+API_URL=https://<render-domain>
+PORT=4000
+```
+
+---
+
+## 3. Termii Mock Strategy (critical path)
+
+The project is built and validated **locally against a mocked Termii** before any
+money is spent or any plan is upgraded.
+
+1. **Placeholder config** — `.env` ships with `TERMII_DEVICE_ID=dev-placeholder`
+   and empty `TERMII_TEMPLATE_ID`; all code paths exist but no live calls are made.
+2. **Inbound simulator** — `node scripts/mock-inbound.js "START"` POSTs Termii's
+   exact inbound webhook JSON to the local server:
+
+   ```json
+   {
+     "type": "inbound",
+     "id": "8248611476370959318",
+     "message_id": "3905204342778053556",
+     "receiver": "12022214836",
+     "sender": "2348030000000",
+     "message": "START",
+     "received_at": "2026-10-07T10:51:03.000000Z",
+     "cost": null,
+     "command": "Received",
+     "status": "Received",
+     "channel": "whatsapp"
+   }
+   ```
+
+   Endpoint is idempotent on `message_id`. This lets us inject keywords, menus,
+   PAUSE/STOP flows, etc. exactly as a real user would send them.
+
+3. **Outbound stub** — `TermiiAdapter` in mock mode logs the formatted bot reply
+   to the console **and** still writes the `Notification` / message record, so
+   delivery logs, dashboards, and status transitions behave identically to live.
+   Live mode swaps in a `fetch` to `TERMII_BASE_URL/api/whatsapp/freeform`
+   (or `/api/send/template` when `TERMII_TEMPLATE_ID` is set) with **no code change**.
+4. **Neon from day 1** — local-first development, same DB connection style in dev
+   and deployed environments.
+
+### Going live later (config only, no code change)
+
+1. Buy/provision a Termii WhatsApp device → set `TERMII_DEVICE_ID`, `TERMII_MODE=live`.
+2. Paste the Render webhook URL (`https://<render>/webhooks/termii`) into
+   `accounts.termii.com/#/account/webhook/config`.
+3. Optionally approve a WhatsApp template and set `TERMII_TEMPLATE_ID` for
+   proactive out-of-window messages (transaction alerts / 9 PM summaries more
+   than 24h after the customer's last inbound message).
+
+**Termii constraint to remember:** free-form messages only work inside the
+24-hour customer-service window (started when the customer messages first).
+Proactive messages outside that window require an approved template.
+
+---
+
+## 4. Spec Corrections (ambiguities resolved in the product spec)
+
+These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
+
+1. **New field `Customer.serviceStatus`** holds the five service states
+   (`pending_link | active | paused | opted_out | link_expired`).
+   `consentStatus` and `enrollmentStatus` remain separate fields.
+2. **`Notification.transactionId` is nullable** — `daily_summary` notifications
+   have no transaction.
+3. **Alert-disabled message wording fixed:**
+   > WhatsApp alerts are currently paused for this account.
+   > Reply RESUME on WhatsApp to turn them back on.
+   (The original text pointed to a "dashboard" that does not exist for customers.)
+4. **Add a `BALANCE` WhatsApp command** — spec §7 promises customers can view
+   their balance, and there is no customer dashboard; the bot answers with the
+   linked account's current balance (masked account number only).
+5. **Chat identity capture = full name only**, plus bank choice and consent.
+   No email, phone confirmation from webhook `sender`, never credentials.
+6. **Bank admin "add/invite customer"** = admin creates a `pending_link`
+   customer record and the system generates the standard secure enrollment
+   link, surfaced as a copyable field in the UI.
+7. **Secure links**: signed, single-purpose, short-lived (30-min TTL),
+   one-time-use tokens. Enrollment, re-consent, and relink share one
+   `/enroll/[token]` route with different modes.
+8. **Bot number on dashboard**: surfaced (with the Termii device number) when
+   `TERMII_MODE=live`; shows a `Not configured` badge with the placeholder in
+   mock mode.
+
+---
+
+## 5. Confirmed Assumptions
+
+- **Dev-only mock console** at `/dev/console` — renders a live view of the
+  mocked inbound/outbound bot conversation for debugging and demo fallback.
+  Rendered **only** when `TERMII_MODE=mock`; absent entirely in live mode.
+- **Seed data**: 4 banks (Zenith, Access, GTBank, UBA), 4 bank admins,
+  4 customers pre-linked with seeded transactions/notifications (Adaeze Okafor,
+  Tunde Balogun, Chiamaka Eze, Ibrahim Musa) so dashboards are never empty —
+  plus real customers arriving via the bot.
+- **Auth**: JWT in httpOnly cookie; roles limited to `platform_admin` vs
+  `bank_admin` (no MFA/RBAC depth in the MVP).
+- **Git**: `git init` in the project root to track progress and allow reverts.
+- **Live Termii switch** requires no code change — config only.
+- **API folder structure follows FastAPI-style layering** (core/db/models/schemas/
+  services/routes/workers/adapters) with enforced import rules — see §2.
+  `src/models/` = domain types + enums + Prisma→domain mappers (Prisma schema
+  stays the DB source of truth). `web/` stays idiomatic Next.js.
+
+---
+
+## 6. Phase-by-Phase Build (mapped to spec §14)
+
+| # | Phase | Deliverables | Acceptance gate | Est. |
+|---|---|---|---|---|
+| 0 | Scaffold | FastAPI-style `api/src/` tree (§2) + `web/` + `api/scripts/`, Prisma init, Neon connected, `.env.example`, basic layout/navigation, git init | both apps `npm run dev`, DB ping succeeds | 2h |
+| 1 | Data layer | 8 schemas (+ §4 corrections), migration, seeds (banks/admins/customers/transactions/notifications) | Prisma Studio shows seeded tenants | 3h |
+| 2 | Admin API + auth | login, JWT, platform admin, tenant isolation, dashboard metrics, customers CRUD, notifications list | admin can only query own bank's rows | 5h |
+| 3 | Termii + bot | adapter (mock/live), `POST /webhooks/termii`, bot engine state machine, secure token service, `scripts/mock-inbound.js` | `mock-inbound.js START` → full enrollment → secure link issued, replies logged | 6h |
+| 4 | Mono sim + txns | connect screen APIs, demo accounts, linked account record, opening balance + seed txns, debit/credit triggers | trigger debit → balance updates → notification row `sent` | 5h |
+| 5 | Controls + summary | `PAUSE/RESUME/STOP/START/HELP/PRIVACY/RELINK/BALANCE`, confirmation prompts, re-consent link, cron 21:00 Lagos, Run Now, audit log | opted-out receives no alerts; summary deduped per customer/date | 5h |
+| 6 | UI (all screens) | login, dashboard (9 required tiles), customers, transactions, notifications, settings, `/enroll`, `/consent`, `/status`, dev console | mobile responsiveness check, §15 style compliance | 10h |
+| 7 | E2E + polish | script through all 24 demo steps + full §17 checklist; empty/loading/error states | every §17 item passes without manual DB edits | 5h |
+| 8 | Deploy | Vercel web, Render API, Neon prod, env vars, README, hand webhook URL for Termii console | public enrollment link works end-to-end | 4h |
+
+**Total ≈ 45h with buffer.** Critical path depends on external readiness:
+Neon connection string, Render/Vercel accounts connected, and (later) Termii
+device + webhook configuration.
+
+---
+
+## 7. Demo Flow Coverage
+
+The 24-step presentation script (spec §9) maps to:
+
+- Steps 1–5 → Phase 2 (login, dashboard, multi-bank seed)
+- Steps 6–16 → Phases 3–4 (real WhatsApp bot enrollment → secure link → Mono sim → active)
+- Steps 17–20 → Phase 4 (debit/credit triggers + real/mock alerts)
+- Steps 21–22 → Phase 5 (Run Daily Summary Now + summary contents)
+- Steps 23–24 → Phases 5–7 (STOP → START re-consent + dashboard delivery logs)
+
+---
+
+## 8. Risks
+
+- **48 hours with no scope cuts** — Phase 6 (UI) is the largest single block.
+  If we slip, a cut-list will be presented and approved **before** anything is cut.
+- **No live WhatsApp until a Termii device is provisioned** — real delivery is
+  untestable until then; mock mode makes every other flow fully demonstrable.
+- **24-hour free-form window** — proactive alerts/summaries sent outside the
+  window will fail unless `TERMII_TEMPLATE_ID` is configured; notifications will
+  correctly record `failed` status in that case.
+- **Two-service deploy** (Vercel + Render) — must be completed late in the
+  schedule; local E2E must pass first.
+
+---
+
+## 9. Reference Material
+
+| File | Role |
+|---|---|
+| `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md` | Product spec: data model, message templates, security rules, demo script, acceptance criteria |
+| `octave-chime-platform.html` | Earlier single-bank prototype — visual/interaction reference only |
+| `octave-chime-whatsapp.zip` | Prior Express WhatsApp sender — structural reference only (Meta API, superseded by Termii) |
+| Termii docs | `developer.termii.com` — free-form, templates, incoming webhook payloads |
