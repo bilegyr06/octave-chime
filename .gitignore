@@ -3,6 +3,10 @@ implementation_details/
 .env.*
 !.env.example
 
+# Neon CLI project link (written by `neon link`)
+.neon
+.neon/
+
 node_modules/
 .next/
 dist/
