@@ -251,7 +251,85 @@ device + webhook configuration.
 
 ---
 
-## 7. Demo Flow Coverage
+## 7. Git & GitHub Workflow
+
+### Branches
+
+- **`main`** — production-ready only. Advances only at phase milestones when the
+  build is demo-ready. No broken or unreviewed code lands here.
+- **`develop`** — default working branch; integration target for all work
+  (features, bug fixes, hotfixes, updates, refactors — list not exhaustive).
+- **`type/short-description`** — cut from `develop` per unit of work whenever
+  the situation requires it:
+  - `feature/` — new capability
+  - `fix/` — bug fix
+  - `hotfix/` — urgent production fix
+  - `refactor/` — restructuring without behaviour change
+  - `update/` — dependency/config/doc updates
+  - `chore/` — scaffolding, tooling, housekeeping
+
+### Branch lifecycle
+
+1. Cut from an up-to-date `develop`.
+2. Commit incrementally with Conventional Commits.
+3. Merge back into `develop` when the unit of work passes its acceptance gate.
+4. Delete the branch after merge.
+5. `main` advances only at milestones (end of phase / deploy-ready state).
+
+### Merge decision rule (into `develop`)
+
+- **Merge commit** — branch history is clean and logical AND changes are large
+  enough to warrant preserving the detailed steps (e.g. a whole phase's work).
+- **Squash merge** — changes are minor, or history is littered with tiny
+  incremental commits (chores, typo fixes, WIP cleanup) — keep history tidy.
+- Judged case by case at merge time.
+
+### Commit messages — Conventional Commits
+
+```
+type(scope): message
+```
+Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `style`,
+`perf`, `build`, `ci`
+
+Examples:
+```
+feat(auth): bank admin email/password login with JWT cookie
+fix(summary): prevent duplicate daily summary per customer/date
+chore(env): add Termii placeholder env template
+```
+
+### Review gate (mandatory)
+
+No commit happens without user sign-off.
+
+1. At each checkpoint I stop and notify: branch, scope of work, planned
+   commit message(s).
+2. The user reviews the changes directly in their code editor — no
+   AI-generated review write-up.
+3. Feedback → I revise and re-present. Approval → I commit and continue.
+4. Checkpoints occur at meaningful sub-task boundaries and before any
+   branch merge — not after every single commit.
+
+### Suggested phase → branch mapping
+
+| Phase | Branch |
+|---|---|
+| 0 Scaffold | `chore/scaffold` |
+| 1 Data layer | `feature/data-layer` |
+| 2 Admin API + auth | `feature/admin-api-auth` |
+| 3 Termii + bot | `feature/whatsapp-bot` |
+| 4 Mono sim + txns | `feature/mono-txn-sim` |
+| 5 Controls + summary | `feature/customer-controls-summary` |
+| 6 Admin UI | `feature/admin-ui` |
+| 7 E2E + polish | `fix/e2e-acceptance` |
+| 8 Deploy | `chore/deploy` |
+
+`fix/`, `hotfix/`, `refactor/` branches cut as needed within any phase.
+
+---
+
+## 8. Demo Flow Coverage
 
 The 24-step presentation script (spec §9) maps to:
 
@@ -263,7 +341,7 @@ The 24-step presentation script (spec §9) maps to:
 
 ---
 
-## 8. Risks
+## 9. Risks
 
 - **48 hours with no scope cuts** — Phase 6 (UI) is the largest single block.
   If we slip, a cut-list will be presented and approved **before** anything is cut.
@@ -277,7 +355,7 @@ The 24-step presentation script (spec §9) maps to:
 
 ---
 
-## 9. Reference Material
+## 10. Reference Material
 
 | File | Role |
 |---|---|
