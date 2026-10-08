@@ -1,4 +1,4 @@
-import type { Transaction } from "@prisma/client";
+import type { Customer, Transaction } from "@prisma/client";
 
 export interface TransactionDomain {
   id: string;
@@ -28,4 +28,16 @@ export function toTransactionDomain(t: Transaction): TransactionDomain {
     transactionDate: t.transactionDate,
     source: t.source,
   };
+}
+
+export interface TransactionListItemDomain extends TransactionDomain {
+  customerName: string;
+}
+
+export type TransactionListRow = Transaction & {
+  customer?: Pick<Customer, "fullName"> | null;
+};
+
+export function toTransactionListItemDomain(t: TransactionListRow): TransactionListItemDomain {
+  return { ...toTransactionDomain(t), customerName: t.customer?.fullName ?? "" };
 }

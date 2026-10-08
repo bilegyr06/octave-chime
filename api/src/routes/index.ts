@@ -7,6 +7,7 @@ import { customersRouter } from "./customers";
 import { notificationsRouter } from "./notifications";
 import { monoRouter } from "./mono";
 import { transactionsRouter } from "./transactions";
+import { bankRouter } from "./bank";
 
 export const routes = Router();
 
@@ -19,3 +20,4 @@ routes.use("/customers", customersRouter);
 routes.use("/notifications", notificationsRouter);
 routes.use("/mono", monoRouter);
 routes.use("/transactions", transactionsRouter);
+routes.use("/bank", bankRouter);

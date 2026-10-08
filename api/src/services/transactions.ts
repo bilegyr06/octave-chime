@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { Prisma, type TransactionType } from "@prisma/client";
 import { prisma } from "../db/prisma";
 import { logAudit } from "../db/audit";
 import { AppError } from "../core/errors";
@@ -7,9 +8,10 @@ import { createTermiiAdapter } from "../adapters/termii";
 import { resolveBankScope } from "./scope";
 import { decideDelivery } from "./notifications";
 import { transactionAlert } from "./templates";
-import { toTransactionDomain, type TransactionDomain } from "../models/transaction";
+import { toTransactionDomain, toTransactionListItemDomain, type TransactionDomain, type TransactionListItemDomain } from "../models/transaction";
 import type { AdminPrincipal } from "../models/admin";
-import type { NotificationStatus, TransactionType } from "@prisma/client";
+import type { NotificationStatus } from "@prisma/client";
+import type { Page } from "../schemas/query";
 
 export interface SimulateTxnInput {
   customerId: string;
@@ -25,6 +27,66 @@ export interface SimulateTxnResult {
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+export interface TransactionListInput {
+  page: number;
+  pageSize: number;
+  customerId?: string;
+  type?: string;
+  q?: string;
+  requestedBankId?: string;
+}
+
+/**
+ * Admin read side: paginated, tenant-scoped transactions with an optional
+ * customer/type/free-text filter (matches narration or reference).
+ */
+export async function listTransactions(
+  actor: AdminPrincipal,
+  input: TransactionListInput,
+): Promise<Page<TransactionListItemDomain>> {
+  const bankId = await resolveBankScope(actor, input.requestedBankId);
+
+  if (input.customerId) {
+    const customer = await prisma.customer.findFirst({
+      where: { id: input.customerId, ...(bankId ? { bankId } : {}) },
+      select: { id: true },
+    });
+    if (!customer) throw new AppError("Customer not found", 404, "not_found");
+  }
+
+  const where: Prisma.TransactionWhereInput = {
+    ...(bankId ? { bankId } : {}),
+    ...(input.type ? { type: input.type as TransactionType } : {}),
+    ...(input.customerId ? { customerId: input.customerId } : {}),
+    ...(input.q
+      ? {
+          OR: [
+            { narration: { contains: input.q, mode: "insensitive" } },
+            { reference: { contains: input.q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      include: { customer: { select: { fullName: true } } },
+      orderBy: [{ transactionDate: "desc" }, { createdAt: "desc" }],
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+    }),
+    prisma.transaction.count({ where }),
+  ]);
+
+  return {
+    items: items.map(toTransactionListItemDomain),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
 }
 
 /**

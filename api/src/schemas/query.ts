@@ -19,6 +19,13 @@ export const notificationQuerySchema = paginationSchema.extend({
   bankId: z.string().cuid().optional(), // platform_admin only
 });
 
+export const transactionQuerySchema = paginationSchema.extend({
+  customerId: z.string().cuid("Invalid customer id").optional(),
+  type: z.enum(["debit", "credit"]).optional(),
+  q: z.string().trim().max(160).optional(), // matches narration or reference
+  bankId: z.string().cuid().optional(), // platform_admin only
+});
+
 export interface Page<T> {
   items: T[];
   total: number;
