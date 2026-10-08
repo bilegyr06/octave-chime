@@ -167,3 +167,29 @@ export const NOT_LINKED_YET =
 export function balanceText(balance: number, accountLast4: string): string {
   return `Current balance: NGN ${formatNGN(balance)}\nAccount ending ${accountLast4}`;
 }
+
+export interface DailySummaryFields {
+  date: string;
+  accountLast4: string;
+  openingBalance: number;
+  totalCredits: number;
+  totalDebits: number;
+  transactionCount: number;
+  closingBalance: number;
+}
+
+/** Spec §12 Daily summary template (21:00 Lagos delivery). */
+export function dailySummary(f: DailySummaryFields): string {
+  return [
+    "Your Daily Balance Summary",
+    `Date: ${f.date}`,
+    `Account ending ${f.accountLast4}`,
+    "",
+    `Opening balance: NGN ${formatNGN(f.openingBalance)}`,
+    `Credits: NGN ${formatNGN(f.totalCredits)}`,
+    `Debits: NGN ${formatNGN(f.totalDebits)}`,
+    `Transactions: ${f.transactionCount}`,
+    "",
+    `Closing balance: NGN ${formatNGN(f.closingBalance)}`,
+  ].join("\n");
+}

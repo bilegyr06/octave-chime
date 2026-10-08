@@ -6,6 +6,31 @@ import type { AdminPrincipal } from "../models/admin";
 import type { Page } from "../schemas/query";
 import { resolveBankScope } from "./scope";
 
+export interface DeliveryDecision {
+  eligible: boolean;
+  reason?: string;
+}
+
+/**
+ * Phase 5 gate: whether a customer should receive outbound alerts on their
+ * linked phone. Applied to transaction alerts and daily summaries alike.
+ */
+export function decideDelivery(
+  customer: Pick<
+    import("@prisma/client").Customer,
+    "whatsappPhone" | "serviceStatus" | "consentStatus" | "whatsappAlertsEnabled"
+  >,
+): DeliveryDecision {
+  if (!customer.whatsappPhone) return { eligible: false, reason: "no recipient phone on record" };
+  if (customer.serviceStatus !== "active")
+    return { eligible: false, reason: `service ${customer.serviceStatus}` };
+  if (customer.consentStatus !== "granted")
+    return { eligible: false, reason: `consent ${customer.consentStatus}` };
+  if (!customer.whatsappAlertsEnabled)
+    return { eligible: false, reason: "whatsapp alerts disabled" };
+  return { eligible: true };
+}
+
 export interface NotificationListInput {
   page: number;
   pageSize: number;

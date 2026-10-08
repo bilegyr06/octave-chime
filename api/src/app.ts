@@ -4,6 +4,7 @@ import { config } from "./core/config";
 import { routes } from "./routes";
 import { webhooksRouter } from "./routes/webhooks";
 import { enrollRouter } from "./routes/enroll";
+import { cronRouter } from "./routes/cron";
 import { errorHandler, notFoundHandler } from "./core/errors";
 
 export function createApp() {
@@ -20,6 +21,7 @@ export function createApp() {
   app.use("/webhooks", webhooksRouter);
   app.use("/api", routes);
   app.use("/api/enroll", enrollRouter);
+  app.use("/cron", cronRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

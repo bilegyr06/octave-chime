@@ -8,6 +8,7 @@ export const config = {
   databaseUrl: env.DATABASE_URL ?? "",
   sessionSecret: env.SESSION_SECRET ?? "",
   jwtSecret: env.JWT_SECRET ?? "",
+  cronSecret: env.CRON_SECRET ?? "",
   appUrl: env.APP_URL ?? "http://localhost:3000",
   apiUrl: env.API_URL ?? "http://localhost:4000",
   termii: {

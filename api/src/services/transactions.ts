@@ -5,6 +5,7 @@ import { AppError } from "../core/errors";
 import { logger } from "../core/logger";
 import { createTermiiAdapter } from "../adapters/termii";
 import { resolveBankScope } from "./scope";
+import { decideDelivery } from "./notifications";
 import { transactionAlert } from "./templates";
 import { toTransactionDomain, type TransactionDomain } from "../models/transaction";
 import type { AdminPrincipal } from "../models/admin";
@@ -100,14 +101,22 @@ export async function simulateTransaction(
   let providerMessageId: string | null = null;
   let errorMessage: string | null = null;
 
-  if (phone) {
+  const delivery = decideDelivery({
+    whatsappPhone: phone,
+    serviceStatus: customer.serviceStatus,
+    consentStatus: customer.consentStatus,
+    whatsappAlertsEnabled: customer.whatsappAlertsEnabled,
+  });
+
+  if (phone && delivery.eligible) {
     const send = await createTermiiAdapter().send(phone, messageBody);
     status = send.status;
     providerMessageId = send.providerMessageId;
     errorMessage = send.errorMessage ?? null;
   } else {
+    // Bank-side transaction still stands; alert suppressed with a skipped row.
     status = "skipped";
-    errorMessage = "no recipient phone on record";
+    errorMessage = delivery.reason ?? "no recipient phone on record";
   }
 
   const notification = await prisma.notification.create({
