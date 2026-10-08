@@ -93,7 +93,7 @@ export function Badge({
   tone = "mute",
 }: {
   children: ReactNode;
-  tone?: "mute" | "brand" | "danger" | "warn" | "ok";
+  tone?: "mute" | "brand" | "danger" | "warn" | "ok" | "whatsapp";
 }) {
   const map = {
     mute: "bg-line/60 text-mute",
@@ -101,6 +101,7 @@ export function Badge({
     danger: "bg-danger-soft text-danger",
     warn: "bg-warn-soft text-warn",
     ok: "bg-ok-soft text-brand",
+    whatsapp: "bg-whatsapp/15 text-[#0b7a3d]",
   } as const;
   return (
     <span
@@ -108,5 +109,29 @@ export function Badge({
     >
       {children}
     </span>
+  );
+}
+
+export function StatTile({
+  label,
+  value,
+  sub,
+  emphasis = "neutral",
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  emphasis?: "neutral" | "danger" | "brand";
+}) {
+  const valueClass =
+    emphasis === "danger" ? "text-danger" : emphasis === "brand" ? "text-brand" : "text-ink";
+  return (
+    <Card className="p-5">
+      <p className="text-sm text-mute">{label}</p>
+      <p className={`mt-2 font-mono text-3xl font-medium tracking-tight tabular ${valueClass}`}>
+        {value}
+      </p>
+      {sub ? <p className="mt-1.5 text-xs text-mute">{sub}</p> : null}
+    </Card>
   );
 }

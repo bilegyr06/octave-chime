@@ -1,14 +1,8 @@
-import { Card } from "@/components/ui";
+import type { Metadata } from "next";
+import { OverviewData } from "@/components/overview-data";
+
+export const metadata: Metadata = { title: "Overview" };
 
 export default function Page() {
-  return (
-    <>
-      <h1 className="text-xl font-semibold tracking-tight text-ink">Overview</h1>
-      <Card className="mt-6 px-6 py-14 text-center">
-        <p className="text-sm text-mute">
-          Bank metrics and recent activity land here in the next UI commit.
-        </p>
-      </Card>
-    </>
-  );
+  return <OverviewData />;
 }
