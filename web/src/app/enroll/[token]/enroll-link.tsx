@@ -146,12 +146,6 @@ export function EnrollLink() {
       key: MONO_PUBLIC_KEY,
       scope: "auth",
       reference: token,
-      data: {
-        customer: {
-          name: context.customer.fullName,
-          email: `${context.customer.id}@enroll.octavechime.local`,
-        },
-      },
       onSuccess: ({ code }) => {
         if (code) void completeLink(code);
       },
