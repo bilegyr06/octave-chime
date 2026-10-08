@@ -4,7 +4,7 @@
 
 Octave Chime is a Nigerian multi-bank SaaS web application that lets banks offer WhatsApp as a third transaction-notification channel alongside SMS and email.
 
-For the demo/prototype, each bank is onboarded into Octave Chime as a tenant. Customers start enrollment from WhatsApp, choose their bank, give consent, receive a secure web link, complete a simulated Mono Connect account-linking flow, and then receive WhatsApp-style transaction alerts and daily balance summaries.
+For the demo/prototype, each bank is onboarded into Octave Chime as a tenant. Customers start enrollment from WhatsApp, choose their bank, give consent, receive a secure web link, complete a Mono Connect account-linking flow (real Connect in sandbox mode for the demo, with a simulated fallback), and then receive WhatsApp-style transaction alerts and daily balance summaries.
 
 The product must be built as a production-shaped MVP: demo-ready by the deadline, but architected so real Mono, WhatsApp Cloud API, and direct bank integrations can be added later without rewriting the system.
 
@@ -21,7 +21,7 @@ For customers:
 
 - Start enrollment inside WhatsApp.
 - Complete sensitive account-linking steps on a secure web page, not inside WhatsApp.
-- Link a bank account through a Mono-style consent flow.
+- Link a bank account through a Mono Connect consent flow.
 - Receive debit and credit alerts on WhatsApp.
 - Receive automatic daily opening/closing balance summaries at the configured end-of-day time, default 9:00 PM.
 - Pause, resume, stop, or restart the service from WhatsApp.
@@ -76,8 +76,10 @@ Use a web app stack that can move quickly but still look credible for a fintech 
 ### Integrations
 
 - Mono adapter:
-  - MVP: simulated Mono Connect.
-  - Future: real Mono Connect and transaction APIs.
+  - MVP: real Mono Connect (sandbox/test mode) — widget code exchange, account
+    + transaction APIs. `MONO_MODE=off` keeps a simulated demo-account path
+    for key-less/offline runs and seeded customers.
+  - Go-live: same adapter, production keys (`MONO_MODE=live`).
 
 - WhatsApp adapter:
   - MVP: simulated WhatsApp message delivery and preview.
@@ -101,8 +103,8 @@ flowchart LR
     BankAdmin[Bank Admin] --> BankPortal[Bank Admin Portal]
     Customer[Customer] --> Enrollment[WhatsApp Enrollment Bot]
     Enrollment --> SecureLink[Secure Web Enrollment Link]
-    SecureLink --> MonoSim[Simulated Mono Connect]
-    MonoSim --> AccountLink[Linked Account Record]
+SecureLink --> MonoConnect[Mono Connect (sandbox / simulated 'off' fallback)]
+    MonoConnect --> AccountLink[Linked Account Record]
 
     BankPortal --> TenantDB[(Octave Chime Database)]
     AccountLink --> TenantDB
@@ -258,29 +260,30 @@ After WhatsApp consent:
 - Show the link in the WhatsApp-style chat simulation.
 - Opening the link should route to the secure web account-linking flow.
 
-### Screen Group 3: Simulated Mono Connect
+### Screen Group 3: Mono Connect (Account Linking)
 
 Purpose:
 
-Simulate customer-consented account linking.
+Customer-consented account linking.
 
 Flow:
 
-1. Show Mono-style connect modal/page.
-2. Customer chooses bank.
-3. Customer chooses a demo account.
-4. Customer authorizes access.
-5. System creates linked account record.
+1. Show the Mono Connect widget on the secure enrollment page.
+2. Customer links their bank (Mono sandbox test banks; simulated demo catalog when `MONO_MODE=off`).
+3. Customer authorizes account access.
+4. Widget returns an auth `code`; the backend exchanges it for the permanent Mono account ID.
+5. System fetches the linked account (name, number, balance) and creates the linked-account record.
 6. System creates opening balance and sample transactions.
 7. Return customer to WhatsApp confirmation/status page.
 
 Important:
 
-- Do not ask for real banking credentials.
-- Label this as "Demo account linking" or "Simulated secure account linking".
+- Do not ask for real banking credentials — the sandbox runs on Mono test
+  credentials and fake sandbox banks; the `off` fallback uses demo accounts.
+- Label the simulation (when used) as "Demo account linking" / "Simulated secure account linking".
 - The design should make it clear that real production access would be handled by a regulated provider such as Mono or by a direct bank integration.
 
-Demo accounts:
+Demo accounts (`MONO_MODE=off` fallback):
 
 - Zenith Bank account ending 1029, balance NGN 100,000.
 - Access Bank account ending 4421, balance NGN 250,000.
@@ -342,7 +345,7 @@ Opt-back-in flow:
 4. Bot sends a short-lived secure re-consent link.
 5. Customer opens the link and confirms consent on the web.
 6. If the previous linked account is still valid, reactivate it.
-7. If the link/provider authorization is expired, send the customer through simulated Mono Connect again.
+7. If the link/provider authorization is expired, send the customer through Mono Connect again.
 8. Bot confirms that WhatsApp alerts and automatic daily summaries are active again.
 
 Secure status page:
@@ -373,8 +376,8 @@ The presentation should follow this exact sequence.
 9. Bot explains safety rules and asks for consent.
 10. Bot creates a pending customer and generates a secure enrollment link.
 11. Open the secure enrollment link.
-12. Proceed to simulated Mono Connect.
-13. Select the customer's bank and demo account.
+12. Link the account through Mono Connect (sandbox test banks).
+13. Authorize access (sandbox), or select bank + demo account (`off` fallback).
 14. Authorize access.
 15. Return to WhatsApp and show confirmation that alerts are active.
 16. Show the bank dashboard with the customer marked active.
@@ -585,12 +588,13 @@ Responsibilities:
 
 Responsibilities:
 
-- Start simulated Mono Connect session.
-- Complete simulated account link.
-- Create linked account.
-- Seed demo transactions.
+- Start Mono Connect session (widget, or `off`-mode simulator).
+- Complete account link (exchange the widget auth code for the Mono account ID).
+- Create linked account and fetch account/balance.
+- Seed opening transactions.
+- Fetch Mono account and transaction data.
 
-Future live methods:
+Methods:
 
 - startMonoConnect()
 - exchangeMonoCode()
@@ -785,16 +789,17 @@ Follow this sequence exactly.
 7. Create customer as pending account link.
 8. Generate secure enrollment link.
 9. Show the link inside the WhatsApp-style chat.
-10. Route the link to simulated Mono Connect.
-### Phase 5: Simulated Mono Connect
+10. Route the link to Mono Connect (sandbox; simulated `off` fallback).
+### Phase 5: Mono Connect (Account Linking)
 
-1. Build Mono-style connection screen.
-2. Show selected bank and available demo accounts.
+1. Build the /enroll/[token] page hosting the Mono Connect widget.
+2. Link via sandbox test bank / selected bank (or demo account in `off` mode).
 3. Let customer authorize account access.
-4. Create linked account.
-5. Seed or generate opening transactions.
-6. Mark customer enrollment as active.
-7. Return customer to WhatsApp confirmation/status page.
+4. Exchange the widget auth code for the permanent Mono account ID.
+5. Create linked account and fetch balance.
+6. Seed or generate opening transactions.
+7. Mark customer enrollment as active.
+8. Return customer to WhatsApp confirmation/status page.
 
 ### Phase 6: WhatsApp Customer Controls and Secure Status Page
 
@@ -918,7 +923,7 @@ The application is complete enough for demo when:
 - A bank admin can log in or select a demo bank.
 - The bank dashboard shows real seeded metrics.
 - A new customer can be enrolled.
-- The customer can complete simulated Mono Connect.
+- The customer can complete Mono Connect account linking (sandbox or `off` fallback).
 - A linked account is created.
 - The secure status page confirms linked account status without becoming a full transaction-history dashboard.
 - WhatsApp alerts can be paused, resumed, stopped, and restarted through WhatsApp commands/buttons.
@@ -940,7 +945,6 @@ The application is complete enough for demo when:
 Only attempt these after the core flow works.
 
 - Real WhatsApp Cloud API sandbox/test number.
-- Real Mono sandbox integration.
 - Email fallback notification.
 - Real customer opt-out and opt-back-in through WhatsApp commands and secure re-consent links.
 - CSV export for bank admins.
@@ -962,7 +966,7 @@ First, a bank is onboarded into the platform. Here is Zenith Bank's admin dashbo
 
 Now the customer starts enrollment from WhatsApp by sending START. The bot explains the safety rules, asks the customer to choose their bank, captures consent, and sends a secure enrollment link.
 
-The customer opens that secure link to link their bank account. For this demo, we are using a simulated Mono Connect flow. In production, this can connect through Mono, an approved open-banking provider, or a direct bank API.
+The customer opens that secure link to link their bank account through Mono Connect. For this demo, linking runs in Mono's sandbox with test credentials and fake test banks; an `off` fallback simulates the same flow locally. In production, the same integration connects to real accounts through Mono, an approved open-banking provider, or a direct bank API.
 
 Once the account is linked, the customer returns to WhatsApp. The customer does not need a full dashboard; WhatsApp is the main interface, and the secure web page is only used for linking or re-consent.
 
@@ -984,7 +988,7 @@ If time becomes tight, prioritize in this order:
 1. Bank admin dashboard.
 2. WhatsApp enrollment bot simulation.
 3. Secure customer enrollment link.
-4. Simulated Mono Connect.
+4. Mono Connect account linking (sandbox).
 5. WhatsApp customer controls and secure status page.
 6. Transaction simulation.
 7. WhatsApp alert preview/log.

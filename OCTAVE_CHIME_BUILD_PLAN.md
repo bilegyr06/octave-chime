@@ -20,6 +20,7 @@
 | Prisma version | **6.19.3 pinned** — Prisma 7's dependency tree (studio-core, cloud SDKs) was excessively heavy |
 | Location | Inside `octave chime docs\` → `api\` and `web\` folders |
 | Messaging | **Termii** behind an adapter: `TERMII_MODE=mock` now, `live` later. Free-form primary, `TERMII_TEMPLATE_ID` fallback if configured |
+| Account linking | **Mono** behind an adapter: `MONO_MODE=off` (simulated demo catalog) / `sandbox` (real Connect widget, test keys) now, `live` (same code, prod keys) later — same config-only swap discipline as Termii |
 | Chat bot | Fully real inbound bot (webhook-driven), sequential text replies (no interactive buttons) |
 | Auth | Email/password for bank admins + platform admin role (JWT httpOnly cookie) |
 | Scheduler | Real cron at **21:00 Africa/Lagos** + admin "Run Daily Summary Now" demo action |
@@ -101,7 +102,7 @@ octave chime docs\
 | `app/services/` | `src/services/` | business logic only |
 | `app/routes/` (APIRouter) | `src/routes/` | one Express Router per resource |
 | `app/workers/` | `src/workers/` | cron scheduler, summary job, retries |
-| `app/integrations/` | `src/adapters/` | Termii (mock/live), future Mono |
+| `app/integrations/` | `src/adapters/` | Termii (mock/live), Mono (off/sandbox/live) |
 
 ### Repository model (single repo, monorepo deploy)
 
@@ -219,6 +220,13 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
 8. **Bot number on dashboard**: surfaced (with the Termii device number) when
    `TERMII_MODE=live`; shows a `Not configured` badge with the placeholder in
    mock mode.
+9. **Mono Connect is real (sandbox) in the MVP** — account linking runs the
+   actual Mono Connect widget in sandbox/test mode (fake banks, `user_good` /
+   `123456` test credentials); the backend exchanges the widget auth `code` for
+   a permanent Mono account ID via `POST /v2/accounts/auth`. Spec §8's "never
+   ask real banking credentials" still holds — sandbox credentials are fake.
+   `MONO_MODE=off` keeps the simulated demo-account catalog for key-less /
+   offline runs; `mono_simulated` remains for seeded customers.
 
 ---
 
@@ -235,6 +243,7 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
   `bank_admin` (no MFA/RBAC depth in the MVP).
 - **Git**: `git init` in the project root to track progress and allow reverts.
 - **Live Termii switch** requires no code change — config only.
+- **Live Mono switch** requires no code change — config only (`MONO_MODE`).
 - **API folder structure follows FastAPI-style layering** (core/db/models/schemas/
   services/routes/workers/adapters) with enforced import rules — see §2.
   `src/models/` = domain types + enums + Prisma→domain mappers (Prisma schema
@@ -250,7 +259,7 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
 | 1 | Data layer | 8 schemas (+ §4 corrections), migration, seeds (banks/admins/customers/transactions/notifications) | Prisma Studio shows seeded tenants | 3h |
 | 2 | Admin API + auth | login, JWT, platform admin, tenant isolation, dashboard metrics, customers CRUD, notifications list | admin can only query own bank's rows | 5h |
 | 3 | Termii + bot | adapter (mock/live), `POST /webhooks/termii`, bot engine state machine, secure token service, `scripts/mock-inbound.js` | `mock-inbound.js START` → full enrollment → secure link issued, replies logged | 6h |
-| 4 | Mono sim + txns | connect screen APIs, demo accounts, linked account record, opening balance + seed txns, debit/credit triggers | trigger debit → balance updates → notification row `sent` | 5h |
+| 4 | Mono sandbox + txns | real Connect linking (widget `code` exchange → `LinkedAccount mono_live`), minimal `/enroll/[token]` page, `off`-mode demo catalog fallback, debit/credit triggers | sandbox link → account active → trigger debit → notification row `sent` | 5h |
 | 5 | Controls + summary | `PAUSE/RESUME/STOP/START/HELP/PRIVACY/RELINK/BALANCE`, confirmation prompts, re-consent link, cron 21:00 Lagos, Run Now, audit log | opted-out receives no alerts; summary deduped per customer/date | 5h |
 | 6 | UI (all screens) | login, dashboard (9 required tiles), customers, transactions, notifications, settings, `/enroll`, `/consent`, `/status`, dev console | mobile responsiveness check, §15 style compliance | 10h |
 | 7 | E2E + polish | script through all 24 demo steps + full §17 checklist; empty/loading/error states | every §17 item passes without manual DB edits | 5h |
@@ -330,7 +339,7 @@ No commit happens without user sign-off.
 | 1 Data layer | `feature/data-layer` |
 | 2 Admin API + auth | `feature/admin-api-auth` |
 | 3 Termii + bot | `feature/whatsapp-bot` |
-| 4 Mono sim + txns | `feature/mono-txn-sim` |
+| 4 Mono sandbox + txns | `feature/mono-sandbox` |
 | 5 Controls + summary | `feature/customer-controls-summary` |
 | 6 Admin UI | `feature/admin-ui` |
 | 7 E2E + polish | `fix/e2e-acceptance` |
@@ -345,7 +354,7 @@ No commit happens without user sign-off.
 The 24-step presentation script (spec §9) maps to:
 
 - Steps 1–5 → Phase 2 (login, dashboard, multi-bank seed)
-- Steps 6–16 → Phases 3–4 (real WhatsApp bot enrollment → secure link → Mono sim → active)
+- Steps 6–16 → Phases 3–4 (real WhatsApp bot enrollment → secure link → Mono sandbox link → active)
 - Steps 17–20 → Phase 4 (debit/credit triggers + real/mock alerts)
 - Steps 21–22 → Phase 5 (Run Daily Summary Now + summary contents)
 - Steps 23–24 → Phases 5–7 (STOP → START re-consent + dashboard delivery logs)
@@ -363,6 +372,10 @@ The 24-step presentation script (spec §9) maps to:
   correctly record `failed` status in that case.
 - **Two-service deploy** (Vercel + Render) — must be completed late in the
   schedule; local E2E must pass first.
+- **Mono sandbox keys are external** — linking needs a free app.mono.com
+  `Connect` app's test public/secret keys; sandbox API calls are free, the
+  live wallet/KYB only matters at go-live. `MONO_MODE=off` keeps the demo
+  self-contained if Mono is unreachable.
 
 ---
 
