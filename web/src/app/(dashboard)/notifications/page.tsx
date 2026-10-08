@@ -1,15 +1,8 @@
-import { Card } from "@/components/ui";
+import type { Metadata } from "next";
+import { NotificationsData } from "@/components/notifications-data";
+
+export const metadata: Metadata = { title: "Notifications" };
 
 export default function Page() {
-  return (
-    <>
-      <h1 className="text-xl font-semibold tracking-tight text-ink">Notifications</h1>
-      <Card className="mt-6 px-6 py-14 text-center">
-        <p className="text-sm text-mute">
-          The delivery log with WhatsApp status accents
-          lands here in the next UI commit.
-        </p>
-      </Card>
-    </>
-  );
+  return <NotificationsData />;
 }
