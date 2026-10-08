@@ -229,6 +229,15 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
    ask real banking credentials" still holds — sandbox credentials are fake.
    `MONO_MODE=off` keeps the simulated demo-account catalog for key-less /
    offline runs; `mono_simulated` remains for seeded customers.
+10. **Daily summary numbers are derived, not stored per-move** — the schema has
+    no `balanceBefore` column, so the opening balance in each `DailySummary` is
+    computed as `closing − net(credits − debits)` for the Lagos-day window;
+    closing equals the linked account's persisted `currentBalance` at run time.
+    No migration.
+11. **RELINK/reconsent = a new account** — completing a `relink` or `reconsent`
+    token creates a brand-new `LinkedAccount` (provider exchange), sets the
+    previous active account to `disconnected`, and preserves each account's
+    transaction history/notifications. `enroll` remains first-link-only.
 
 ---
 
