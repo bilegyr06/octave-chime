@@ -5,6 +5,7 @@ import { createCustomerSchema, updateCustomerSchema } from "../schemas/customer"
 import {
   createCustomer,
   getCustomer,
+  issueCustomerEnrollLink,
   listCustomers,
   updateCustomer,
 } from "../services/customers";
@@ -56,6 +57,16 @@ customersRouter.patch("/:id", async (req, res, next) => {
     const input = parseOrThrow(updateCustomerSchema, req.body);
     const customer = await updateCustomer(req.admin!, req.params.id, input);
     res.json(customer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Phase 6 admin invite: mint + return a copyable secure enrollment link. */
+customersRouter.post("/:id/enroll-link", async (req, res, next) => {
+  try {
+    const link = await issueCustomerEnrollLink(req.admin!, req.params.id);
+    res.status(201).json(link);
   } catch (err) {
     next(err);
   }
