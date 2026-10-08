@@ -24,6 +24,13 @@ export function formatDate(value: string | Date): string {
   }).format(d);
 }
 
+export function formatTime(hhmm: string): string {
+  const [hh, mm] = hhmm.split(":").map(Number);
+  const d = new Date();
+  d.setHours(hh ?? 0, mm ?? 0, 0, 0);
+  return new Intl.DateTimeFormat("en-NG", { hour: "numeric", minute: "2-digit" }).format(d);
+}
+
 export function initials(name: string): string {
   return name
     .split(/\s+/)

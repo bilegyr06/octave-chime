@@ -26,6 +26,17 @@ export const notificationTypeLabel: Record<string, string> = {
   daily_summary: "Daily summary",
 };
 
+export const enrollmentStatusLabel: Record<string, string> = {
+  not_started: "Not started",
+  in_progress: "In progress",
+  completed: "Enrolled",
+};
+
+export const consentStatusLabel: Record<string, string> = {
+  granted: "Consent granted",
+  withdrawn: "Consent withdrawn",
+};
+
 export const serviceStatusTone = (status: string): NoticeTone =>
   serviceStatusMap[status]?.tone ?? "mute";
 

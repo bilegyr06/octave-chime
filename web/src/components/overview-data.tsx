@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
@@ -63,19 +63,33 @@ function PanelHeader({ title, href }: { title: string; href?: string }) {
 export function OverviewData() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const load = useCallback(() => {
-    setError(null);
-    setMetrics(null);
+  useEffect(() => {
+    let cancelled = false;
     api<DashboardMetrics>("/api/dashboard/metrics")
-      .then(setMetrics)
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load metrics"));
-  }, []);
-
-  useEffect(load, [load]);
+      .then((m) => {
+        if (!cancelled) setMetrics(m);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load metrics");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   if (error) {
-    return <ErrorState title="Metrics failed to load" hint={error} onRetry={load} />;
+    return (
+      <ErrorState
+        title="Metrics failed to load"
+        hint={error}
+        onRetry={() => {
+          setError(null);
+          setReloadKey((k) => k + 1);
+        }}
+      />
+    );
   }
   if (!metrics) {
     return <Spinner label="Loading metrics" />;
