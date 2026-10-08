@@ -28,6 +28,17 @@ export async function getBankProfile(
   return toBankProfile(bank);
 }
 
+/** Platform-scoped directory of tenant banks (for cross-bank admin views). */
+export async function listBanks(actor: AdminPrincipal): Promise<BankProfileDomain[]> {
+  if (actor.role !== "platform_admin") {
+    throw new AppError("Only platform admins can list banks", 403, "forbidden");
+  }
+  const banks = await prisma.bank.findMany({
+    orderBy: { name: "asc" },
+  });
+  return banks.map(toBankProfile);
+}
+
 export async function updateBankProfile(
   actor: AdminPrincipal,
   input: UpdateBankProfileInput,

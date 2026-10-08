@@ -8,6 +8,7 @@ import { notificationsRouter } from "./notifications";
 import { monoRouter } from "./mono";
 import { transactionsRouter } from "./transactions";
 import { bankRouter } from "./bank";
+import { banksRouter } from "./banks";
 
 export const routes = Router();
 
@@ -21,3 +22,4 @@ routes.use("/notifications", notificationsRouter);
 routes.use("/mono", monoRouter);
 routes.use("/transactions", transactionsRouter);
 routes.use("/bank", bankRouter);
+routes.use("/banks", banksRouter);
