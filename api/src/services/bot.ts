@@ -1,8 +1,22 @@
 import { prisma } from "../db/prisma";
 import { logAudit } from "../db/audit";
-import { AppError } from "../core/errors";
 import { config } from "../core/config";
 import { issueLinkToken } from "./linkToken";
+import {
+  balanceText,
+  HELP_TEXT,
+  NOT_LINKED_YET,
+  PAUSE_CANCELLED,
+  PAUSE_CONFIRM_PROMPT,
+  PAUSE_DONE,
+  PRIVACY_TEXT,
+  RECONSENT_INTRO,
+  RELINK_INTRO,
+  RESUME_DONE,
+  STOP_CANCELLED,
+  STOP_CONFIRM_PROMPT,
+  STOP_DONE,
+} from "./templates";
 
 /** Normalize a Termii-style sender into E.164 (11-digit NGN or full intl). */
 export function normalizePhone(raw: string): string {
@@ -14,7 +28,13 @@ export function normalizePhone(raw: string): string {
   return `+${clean}`;
 }
 
-type BotStep = "idle" | "choose_bank" | "confirm_consent" | "enter_name";
+type BotStep =
+  | "idle"
+  | "choose_bank"
+  | "confirm_consent"
+  | "enter_name"
+  | "confirm_pause"
+  | "confirm_stop";
 
 interface BotSession {
   step: BotStep;
@@ -54,13 +74,6 @@ const CONSENT_TEXT = [
   "Reply YES to continue.",
 ].join("\n");
 
-const HELP_TEXT = [
-  "Commands:",
-  "START - begin WhatsApp alert enrollment",
-  "HELP - show this message",
-  "(More commands arrive after your account is linked.)",
-].join("\n");
-
 const NAME_RE = /^[A-Za-z][A-Za-z' .-]{1,60}$/;
 
 const sessions = new Map<string, BotSession>();
@@ -77,6 +90,167 @@ async function activeBanks(): Promise<{ id: string; name: string }[]> {
   });
 }
 
+/** Fire-and-forget audit for control changes — never throws into the reply path. */
+function auditCustomer(action: string, customer: { id: string; bankId: string }, extra?: object): void {
+  void logAudit({
+    bankId: customer.bankId,
+    actorType: "customer",
+    actorId: customer.id,
+    action,
+    metadata: extra ?? undefined,
+  });
+}
+
+interface ExistingCustomerRow {
+  id: string;
+  bankId: string;
+  fullName: string;
+  serviceStatus: string;
+  bank: { name: string } | null;
+  linkedAccounts: { id: string; currentBalance: unknown; accountNumberMasked: string }[];
+}
+
+/** Handles a control keyword for an already-enrolled customer. Returns null when it is not a control command. */
+async function handleExistingCommand(
+  upper: string,
+  existing: ExistingCustomerRow,
+  phone: string,
+): Promise<HandleResult | null> {
+  const id = existing.id;
+  const firstName = existing.fullName.split(" ")[0];
+  const account = existing.linkedAccounts[0];
+
+  switch (upper) {
+    case "HELP":
+      return { replies: [{ text: HELP_TEXT }], customerId: id };
+    case "PRIVACY":
+      return { replies: [{ text: PRIVACY_TEXT }], customerId: id };
+    case "BALANCE": {
+      if (!account) return { replies: [{ text: NOT_LINKED_YET }], customerId: id };
+      const last4 = account.accountNumberMasked.replace(/^\*+/, "").slice(-4);
+      auditCustomer("customer.balance_checked", existing);
+      return {
+        replies: [{ text: balanceText(Number(account.currentBalance), last4) }],
+        customerId: id,
+      };
+    }
+    case "PAUSE": {
+      if (existing.serviceStatus === "paused") return { replies: [{ text: PAUSE_DONE }], customerId: id };
+      if (existing.serviceStatus === "opted_out") {
+        return {
+          replies: [{ text: "You have opted out of Octave Chime. Reply START to re-opt in." }],
+          customerId: id,
+        };
+      }
+      if (existing.serviceStatus !== "active") {
+        return { replies: [{ text: NOT_LINKED_YET }], customerId: id };
+      }
+      sessions.set(phone, { step: "confirm_pause", bankId: null });
+      return { replies: [{ text: PAUSE_CONFIRM_PROMPT }], customerId: id };
+    }
+    case "RESUME": {
+      if (existing.serviceStatus === "paused") {
+        await prisma.customer.update({
+          where: { id },
+          data: { serviceStatus: "active", whatsappAlertsEnabled: true },
+        });
+        auditCustomer("customer.control_resumed", existing);
+        return { replies: [{ text: RESUME_DONE }], customerId: id };
+      }
+      if (existing.serviceStatus === "active") {
+        return { replies: [{ text: "Your WhatsApp alerts are already active." }], customerId: id };
+      }
+      if (existing.serviceStatus === "opted_out") {
+        const token = await issueLinkToken(id, "reconsent");
+        auditCustomer("customer.reconsent_requested", existing, { mode: "reconsent" });
+        return {
+          replies: [{ text: RECONSENT_INTRO(firstName, `${config.appUrl}/enroll/${token}`) }],
+          customerId: id,
+        };
+      }
+      const token = await issueLinkToken(id, "enroll");
+      auditCustomer("customer.link_reissued", existing, { mode: "enroll" });
+      return {
+        replies: [
+          {
+            text: `${NOT_LINKED_YET}\n\nHere is a fresh secure link within 30 minutes:\n${config.appUrl}/enroll/${token}\n\n🔒 The link is single-use. We never ask for your PIN or password.`,
+          },
+        ],
+        customerId: id,
+      };
+    }
+    case "STOP": {
+      if (existing.serviceStatus === "opted_out") {
+        return {
+          replies: [{ text: "You have already opted out of Octave Chime. Reply START to re-opt in." }],
+          customerId: id,
+        };
+      }
+      if (existing.serviceStatus !== "active" && existing.serviceStatus !== "paused") {
+        return { replies: [{ text: NOT_LINKED_YET }], customerId: id };
+      }
+      sessions.set(phone, { step: "confirm_stop", bankId: null });
+      return { replies: [{ text: STOP_CONFIRM_PROMPT }], customerId: id };
+    }
+    case "RELINK": {
+      if (existing.serviceStatus === "opted_out") {
+        return {
+          replies: [{ text: "You have opted out of Octave Chime. Reply START to re-opt in." }],
+          customerId: id,
+        };
+      }
+      const token = await issueLinkToken(id, "relink");
+      auditCustomer("customer.relink_requested", existing, { mode: "relink" });
+      return {
+        replies: [{ text: RELINK_INTRO(`${config.appUrl}/enroll/${token}`) }],
+        customerId: id,
+      };
+    }
+    case "START": {
+      if (existing.serviceStatus === "active") {
+        return {
+          replies: [
+            {
+              text: `You are already enrolled with Octave Chime at ${existing.bank?.name ?? "your bank"}. Your alerts are active.\n\nReply HELP for commands.`,
+            },
+          ],
+          customerId: id,
+        };
+      }
+      if (existing.serviceStatus === "paused") {
+        return {
+          replies: [
+            {
+              text: "Your WhatsApp alerts are paused. Reply RESUME to turn them back on.\n\nReply HELP for commands.",
+            },
+          ],
+          customerId: id,
+        };
+      }
+      if (existing.serviceStatus === "opted_out") {
+        const token = await issueLinkToken(id, "reconsent");
+        auditCustomer("customer.reconsent_requested", existing, { mode: "reconsent" });
+        return {
+          replies: [{ text: RECONSENT_INTRO(firstName, `${config.appUrl}/enroll/${token}`) }],
+          customerId: id,
+        };
+      }
+      const token = await issueLinkToken(id, "enroll");
+      auditCustomer("customer.link_reissued", existing, { mode: "enroll" });
+      return {
+        replies: [
+          {
+            text: `Your enrollment is still in progress. Open this secure link within 30 minutes to link your bank account:\n${config.appUrl}/enroll/${token}\n\n🔒 The link is single-use and expires in 30 minutes. We never ask for your PIN or password.`,
+          },
+        ],
+        customerId: id,
+      };
+    }
+    default:
+      return null;
+  }
+}
+
 export async function handleInbound(text: string, senderRaw: string): Promise<HandleResult> {
   const phone = normalizePhone(senderRaw);
   const norm = text.trim();
@@ -84,21 +258,61 @@ export async function handleInbound(text: string, senderRaw: string): Promise<Ha
 
   const existing = await prisma.customer.findUnique({
     where: { whatsappPhone: phone },
-    include: { bank: { select: { name: true } } },
+    include: {
+      bank: { select: { name: true } },
+      linkedAccounts: {
+        where: { status: "active" },
+        orderBy: { linkedAt: "desc" },
+        take: 1,
+      },
+    },
   });
-  if (existing && upper === "START") {
-    // Existing customer: no re-enrollment in this phase (re-consent is Phase 5).
-    return {
-      replies: [
-        {
-          text: `You are already enrolled with Octave Chime at ${existing.bank?.name ?? "your bank"} (status: ${existing.serviceStatus}).\n\nReply HELP to see commands.`,
-        },
-      ],
-      customerId: existing.id,
-    };
+
+  if (existing) {
+    const handled = await handleExistingCommand(upper, existing, phone);
+    if (handled) return handled;
   }
 
   const session = sessions.get(phone) ?? { step: "idle" as BotStep, bankId: null };
+
+  // Confirmation steps for existing customers (PAUSE / STOP).
+  if (existing && session.step === "confirm_pause") {
+    if (/^(yes|y|pause|ok|okay)$/i.test(norm)) {
+      resetSession(phone);
+      await prisma.customer.update({
+        where: { id: existing.id },
+        data: { serviceStatus: "paused", whatsappAlertsEnabled: false },
+      });
+      auditCustomer("customer.control_paused", existing);
+      return { replies: [{ text: PAUSE_DONE }], customerId: existing.id };
+    }
+    if (/^(no|n|cancel)$/i.test(norm)) {
+      resetSession(phone);
+      return { replies: [{ text: PAUSE_CANCELLED }], customerId: existing.id };
+    }
+    return { replies: [{ text: `Please reply YES or NO.\n\n${PAUSE_CONFIRM_PROMPT}` }], customerId: existing.id };
+  }
+
+  if (existing && session.step === "confirm_stop") {
+    if (/^(yes|y|stop|ok|okay)$/i.test(norm)) {
+      resetSession(phone);
+      await prisma.customer.update({
+        where: { id: existing.id },
+        data: {
+          serviceStatus: "opted_out",
+          consentStatus: "revoked",
+          whatsappAlertsEnabled: false,
+        },
+      });
+      auditCustomer("customer.opted_out", existing);
+      return { replies: [{ text: STOP_DONE }], customerId: existing.id };
+    }
+    if (/^(no|n|cancel)$/i.test(norm)) {
+      resetSession(phone);
+      return { replies: [{ text: STOP_CANCELLED }], customerId: existing.id };
+    }
+    return { replies: [{ text: `Please reply YES or NO.\n\n${STOP_CONFIRM_PROMPT}` }], customerId: existing.id };
+  }
 
   if (session.step === "idle") {
     if (upper === "START") {
@@ -111,6 +325,9 @@ export async function handleInbound(text: string, senderRaw: string): Promise<Ha
     }
     if (upper === "HELP") {
       return { replies: [{ text: HELP_TEXT }] };
+    }
+    if (upper === "PRIVACY") {
+      return { replies: [{ text: PRIVACY_TEXT }] };
     }
     return {
       replies: [
@@ -151,8 +368,8 @@ export async function handleInbound(text: string, senderRaw: string): Promise<Ha
     return { replies: [{ text: `Please reply YES to accept consent, or NO to cancel.\n\n${CONSENT_TEXT}` }] };
   }
 
-  // enter_name
-  if (!session.bankId) {
+  // enter_name (new enrollment only)
+  if (!existing && !session.bankId) {
     resetSession(phone);
     return { replies: [{ text: bankMenu(await activeBanks()) }] };
   }
@@ -163,7 +380,7 @@ export async function handleInbound(text: string, senderRaw: string): Promise<Ha
     };
   }
 
-  const bank = await prisma.bank.findUnique({ where: { id: session.bankId } });
+  const bank = await prisma.bank.findUnique({ where: { id: session.bankId! } });
   if (!bank) {
     resetSession(phone);
     return { replies: [{ text: "That bank is no longer available. Reply START to begin again." }] };

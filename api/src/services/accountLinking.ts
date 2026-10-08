@@ -7,14 +7,17 @@ import { config, isMonoSimulated } from "../core/config";
 import { createMonoAdapter, MonoProviderError, type MonoAccount } from "../adapters/mono";
 import { createTermiiAdapter } from "../adapters/termii";
 import { verifyLinkToken } from "./linkToken";
-import { linkSuccess } from "./templates";
+import { linkSuccess, relinkSuccess, reconsentLinked } from "./templates";
 import { toLinkedAccountDomain, type LinkedAccountDomain } from "../models/linkedAccount";
-import type { Prisma, TransactionType } from "@prisma/client";
+import type { LinkTokenMode, Prisma, TransactionType } from "@prisma/client";
 
 export interface LinkResult {
   linkedAccount: LinkedAccountDomain;
   serviceStatus: "active";
+  /** Mono environment mode (`off` | `sandbox` | `live`) — API-facing. */
   mode: string;
+  /** Link-token purpose that produced this account. */
+  linkMode: LinkTokenMode;
 }
 
 function round2(n: number): number {
@@ -88,6 +91,7 @@ export async function linkAccountByCode(token: string, code: string): Promise<Li
       "link_invalid",
     );
   }
+  const mode = verification.payload.mode;
 
   const customer = await prisma.customer.findUnique({
     where: { id: verification.payload.customerId },
@@ -138,6 +142,15 @@ export async function linkAccountByCode(token: string, code: string): Promise<Li
       data: { consumedAt: new Date() },
     });
 
+    // RELINK/reconsent reconnect fresh: retire the previous active account(s).
+    // Their transaction history and notifications are preserved per account.
+    if (mode === "relink" || mode === "reconsent") {
+      await tx.linkedAccount.updateMany({
+        where: { customerId: customer.id, status: "active" },
+        data: { status: "disconnected" },
+      });
+    }
+
     const created = await tx.linkedAccount.create({
       data: {
         customerId: customer.id,
@@ -185,14 +198,21 @@ export async function linkAccountByCode(token: string, code: string): Promise<Li
   });
 
   const phone = customer.whatsappPhone;
+  const firstName = customer.fullName.split(" ")[0];
   if (phone) {
-    const text = linkSuccess({
-      firstName: customer.fullName.split(" ")[0],
+    const header = {
+      firstName,
       bankName: customer.bank?.name ?? "bank",
       accountName: account.accountName,
       accountLast4: last4,
       balance: round2(account.balance),
-    });
+    };
+    const text =
+      mode === "relink"
+        ? relinkSuccess(header)
+        : mode === "reconsent"
+          ? reconsentLinked(header)
+          : linkSuccess(header);
     const result = await createTermiiAdapter().send(phone, text);
     await prisma.botMessage.create({
       data: {
@@ -214,7 +234,7 @@ export async function linkAccountByCode(token: string, code: string): Promise<Li
     actorId: customer.id,
     action: "customer.link_completed",
     metadata: {
-      mode: verification.payload.mode,
+      mode,
       provider: isMonoSimulated() ? "mono_simulated" : "mono_live",
       providerAccountId,
     },
@@ -224,5 +244,6 @@ export async function linkAccountByCode(token: string, code: string): Promise<Li
     linkedAccount: toLinkedAccountDomain(linkedAccount),
     serviceStatus: "active",
     mode: config.mono.mode,
+    linkMode: mode,
   };
 }

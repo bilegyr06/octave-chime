@@ -41,6 +41,12 @@ interface LinkResult {
 type Phase = "loading" | "ready" | "success";
 type LoadError = { code: string; message: string } | null;
 
+interface ConsentResponse {
+  confirmed: true;
+  needsLink: boolean;
+  serviceStatus: string;
+}
+
 function exchange(
   token: string,
   code: string,
@@ -71,6 +77,9 @@ export function EnrollLink() {
   const [result, setResult] = useState<LinkResult | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
+  const [consentDone, setConsentDone] = useState(false);
+  const [consenting, setConsenting] = useState(false);
 
   const connectRef = useRef<Connect | null>(null);
 
@@ -93,6 +102,34 @@ export function EnrollLink() {
     },
     [token],
   );
+
+  const confirmConsent = useCallback(async () => {
+    setConsenting(true);
+    setLinkError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/enroll/${encodeURIComponent(token)}/consent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ consent: true }),
+      });
+      const body = (await res.json()) as ConsentResponse & { error?: string; message?: string };
+      if (!res.ok) {
+        setLinkError(body.message ?? "Consent could not be confirmed. Please try again.");
+        setConsenting(false);
+        return;
+      }
+      if (body.needsLink) {
+        setConsentConfirmed(true);
+        setConsenting(false);
+        return;
+      }
+      setConsentDone(true);
+      setPhase("success");
+    } catch {
+      setLinkError("Consent could not be confirmed. Please try again.");
+      setConsenting(false);
+    }
+  }, [token]);
 
   const handleLinkClick = useCallback(() => {
     if (!context) return;
@@ -180,11 +217,56 @@ export function EnrollLink() {
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-6 py-12">
         {phase === "loading" && <p className="text-zinc-500">Loading…</p>}
 
-        {phase === "ready" && context && !loadError && (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h1 className="text-lg font-semibold text-zinc-900">
-              Link your account
-            </h1>
+        {phase === "ready" &&
+          context &&
+          !loadError &&
+          context.mode === "reconsent" &&
+          !consentConfirmed && (
+            <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <h1 className="text-lg font-semibold text-zinc-900">
+                Welcome back
+              </h1>
+              <p className="mt-1 text-sm text-zinc-600">
+                To reactivate WhatsApp alerts, please confirm your consent:
+              </p>
+              <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-zinc-600">
+                <li>
+                  You agree to receive transaction alerts and daily balance
+                  summaries on WhatsApp.
+                </li>
+                <li>
+                  Sensitive credentials must never be shared on WhatsApp.
+                </li>
+                <li>
+                  Account linking happens on a secure web page, never inside
+                  WhatsApp.
+                </li>
+              </ol>
+              {linkError && (
+                <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {linkError}
+                </p>
+              )}
+              <button
+                onClick={() => void confirmConsent()}
+                disabled={consenting}
+                className="mt-6 h-11 w-full rounded-lg bg-zinc-900 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {consenting ? "Confirming…" : "Confirm consent"}
+              </button>
+            </section>
+          )}
+
+        {phase === "ready" &&
+          context &&
+          !loadError &&
+          !(context.mode === "reconsent" && !consentConfirmed) && (
+            <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <h1 className="text-lg font-semibold text-zinc-900">
+                {context.mode === "relink"
+                  ? "Re-link your account"
+                  : "Link your account"}
+              </h1>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-zinc-500">Bank</dt>
@@ -261,6 +343,22 @@ export function EnrollLink() {
             </h1>
             <p className="mt-2 text-sm text-zinc-500">
               Return to WhatsApp and start again if you need a fresh link.
+            </p>
+          </section>
+        )}
+
+        {phase === "success" && consentDone && (
+          <section className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">
+            <h1 className="text-lg font-semibold text-emerald-700">
+              Consent confirmed
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600">
+              Your consent has been recorded and your WhatsApp transaction
+              alerts and daily summaries are active again.
+            </p>
+            <p className="mt-4 text-sm text-zinc-500">
+              You can now close this page. A confirmation has been sent to you
+              on WhatsApp.
             </p>
           </section>
         )}
