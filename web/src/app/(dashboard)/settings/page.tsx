@@ -1,14 +1,8 @@
-import { Card } from "@/components/ui";
+import type { Metadata } from "next";
+import { SettingsData } from "@/components/settings-data";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default function Page() {
-  return (
-    <>
-      <h1 className="text-xl font-semibold tracking-tight text-ink">Settings</h1>
-      <Card className="mt-6 px-6 py-14 text-center">
-        <p className="text-sm text-mute">
-          Bank profile editing lands here in the next UI commit.
-        </p>
-      </Card>
-    </>
-  );
+  return <SettingsData />;
 }
