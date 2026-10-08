@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../db/prisma";
 import { AppError } from "../core/errors";
 import { consumeLinkToken, verifyLinkToken } from "../services/linkToken";
+import { config, isMonoSimulated } from "../core/config";
+import { demoAccountForBank } from "../models/monoDemo";
 
 export const enrollRouter = Router();
 
@@ -10,7 +12,7 @@ function maskPhone(phone: string): string {
   return `${phone.slice(0, 4)}****${phone.slice(-2)}`;
 }
 
-/** Public validation for secure /enroll/[token] links (UI page is Phase 6). */
+/** Public validation for secure /enroll/[token] links. */
 enrollRouter.get("/:token", async (req, res, next) => {
   try {
     const verification = await verifyLinkToken(req.params.token);
@@ -37,6 +39,12 @@ enrollRouter.get("/:token", async (req, res, next) => {
         phoneMasked: customer.whatsappPhone ? maskPhone(customer.whatsappPhone) : null,
       },
       bank: customer.bank,
+      mono: {
+        mode: config.mono.mode,
+        demoAccount: isMonoSimulated()
+          ? demoAccountForBank(customer.bank?.name ?? "")
+          : null,
+      },
     });
   } catch (err) {
     next(err);

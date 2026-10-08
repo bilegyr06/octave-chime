@@ -1,0 +1,300 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import Connect from "@mono.co/connect.js";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const MONO_PUBLIC_KEY = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY ?? "";
+
+interface DemoAccount {
+  institutionName: string;
+  accountName: string;
+  accountNumber: string;
+  balance: number;
+}
+
+interface EnrollContext {
+  valid: boolean;
+  mode: "enroll" | "reconsent" | "relink";
+  expiresAt: string;
+  customer: { id: string; fullName: string; phoneMasked: string | null };
+  bank: { id: string; name: string; logoUrl: string | null } | null;
+  mono: {
+    mode: "off" | "sandbox" | "live";
+    demoAccount: DemoAccount | null;
+  };
+}
+
+interface LinkResult {
+  linkedAccount: {
+    accountName: string;
+    accountNumberMasked: string;
+    currency: string;
+    currentBalance: number;
+    provider: string;
+  };
+  serviceStatus: string;
+  mode: string;
+}
+
+type Phase = "loading" | "ready" | "success";
+type LoadError = { code: string; message: string } | null;
+
+function exchange(
+  token: string,
+  code: string,
+): Promise<{ data?: LinkResult; error?: string; message?: string; status: number }> {
+  return fetch(`${API_URL}/api/mono/exchange`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, code }),
+  }).then(async (res) => {
+    const body = (await res.json()) as Partial<LinkResult> & {
+      error?: string;
+      message?: string;
+    };
+    if (!res.ok) {
+      return { error: body.error, message: body.message, status: res.status };
+    }
+    return { data: body as LinkResult, status: res.status };
+  });
+}
+
+export function EnrollLink() {
+  const params = useParams<{ token: string }>();
+  const token = params.token;
+
+  const [phase, setPhase] = useState<Phase>("loading");
+  const [context, setContext] = useState<EnrollContext | null>(null);
+  const [loadError, setLoadError] = useState<LoadError>(null);
+  const [result, setResult] = useState<LinkResult | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
+
+  const connectRef = useRef<Connect | null>(null);
+
+  const completeLink = useCallback(
+    async (code: string) => {
+      setLinking(true);
+      setLinkError(null);
+      const res = await exchange(token, code);
+      if (res.error || !res.data) {
+        const message =
+          res.status === 502
+            ? "We could not reach the provider. Please try again."
+            : res.message ?? "Account linking failed. Please try again.";
+        setLinkError(message);
+        setLinking(false);
+        return;
+      }
+      setResult(res.data);
+      setPhase("success");
+    },
+    [token],
+  );
+
+  const handleLinkClick = useCallback(() => {
+    if (!context) return;
+    if (context.mono.mode === "off" && context.mono.demoAccount) {
+      void completeLink(`demo://${context.mono.demoAccount.accountNumber}`);
+      return;
+    }
+    if (!MONO_PUBLIC_KEY) {
+      setLinkError("Account linking is not configured for this environment.");
+      return;
+    }
+    connectRef.current?.close();
+    const connect = new Connect({
+      key: MONO_PUBLIC_KEY,
+      scope: "auth",
+      reference: token,
+      data: {
+        customer: {
+          name: context.customer.fullName,
+          email: `${context.customer.id}@enroll.octavechime.local`,
+        },
+      },
+      onSuccess: ({ code }) => {
+        if (code) void completeLink(code);
+      },
+      onClose: () => setLinking(false),
+    });
+    connectRef.current = connect;
+    connect.setup();
+    connect.open();
+    setLinking(true);
+  }, [context, token, completeLink]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/api/enroll/${encodeURIComponent(token)}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            message?: string;
+          };
+          throw { status: res.status, code: body.error, message: body.message };
+        }
+        return (await res.json()) as EnrollContext;
+      })
+      .then((ctx) => {
+        if (cancelled) return;
+        if (!ctx.valid) {
+          setLoadError({ code: "link_invalid", message: "This link is not valid." });
+          setPhase("ready");
+          return;
+        }
+        setContext(ctx);
+        setPhase("ready");
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const e = err as { status?: number; code?: string; message?: string };
+        const expired = e.status === 410 || e.status === 404;
+        setLoadError({
+          code: e.code ?? "link_error",
+          message: expired
+            ? "This link has expired or already been used."
+            : e.message ?? "Something went wrong loading this link.",
+        });
+        setPhase("ready");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const linked = context?.mono.demoAccount ?? null;
+  const last4 = (accountNumber: string) => accountNumber.slice(-4);
+
+  return (
+    <div className="flex min-h-full flex-col bg-zinc-50 font-sans">
+      <header className="border-b border-zinc-200 bg-white px-6 py-5">
+        <span className="text-sm font-semibold text-zinc-900">
+          Octave&nbsp;Chime
+        </span>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-6 py-12">
+        {phase === "loading" && <p className="text-zinc-500">Loading…</p>}
+
+        {phase === "ready" && context && !loadError && (
+          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <h1 className="text-lg font-semibold text-zinc-900">
+              Link your account
+            </h1>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Bank</dt>
+                <dd className="font-medium text-zinc-900">
+                  {context.bank?.name ?? "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Name</dt>
+                <dd className="font-medium text-zinc-900">
+                  {context.customer.fullName}
+                </dd>
+              </div>
+              {context.customer.phoneMasked && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-zinc-500">WhatsApp</dt>
+                  <dd className="font-medium text-zinc-900">
+                    {context.customer.phoneMasked}
+                  </dd>
+                </div>
+              )}
+            </dl>
+
+            {context.mono.mode === "off" ? (
+              linked ? (
+                <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-xs uppercase tracking-wide text-zinc-500">
+                    Demo account
+                  </p>
+                  <p className="mt-1 font-medium text-zinc-900">
+                    {linked.institutionName} · {linked.accountName}
+                  </p>
+                  <p className="text-sm text-zinc-600">
+                    Account ending {last4(linked.accountNumber)} · Balance: NGN{" "}
+                    {linked.balance.toLocaleString("en-NG")}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-6 text-sm text-zinc-500">
+                  No demo account is mapped to this bank.
+                </p>
+              )
+            ) : (
+              <p className="mt-4 text-sm text-zinc-500">
+                Linking runs through Mono Connect. You will be redirected to
+                your bank&apos;s secure sandbox login.
+              </p>
+            )}
+
+            {linkError && (
+              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {linkError}
+              </p>
+            )}
+
+            <button
+              onClick={handleLinkClick}
+              disabled={linking}
+              className="mt-6 h-11 w-full rounded-lg bg-zinc-900 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {linking
+                ? "Linking…"
+                : context.mono.mode === "off"
+                  ? "Link this demo account"
+                  : "Link my bank account"}
+            </button>
+          </section>
+        )}
+
+        {phase === "ready" && loadError && (
+          <section className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
+            <h1 className="text-lg font-semibold text-zinc-900">
+              {loadError.message}
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
+              Return to WhatsApp and start again if you need a fresh link.
+            </p>
+          </section>
+        )}
+
+        {phase === "success" && result && (
+          <section className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">
+            <h1 className="text-lg font-semibold text-emerald-700">
+              Account linked
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600">
+              {result.linkedAccount.accountName} ending{" "}
+              {result.linkedAccount.accountNumberMasked.replace(/^\*+/, "")} is
+              now connected.
+            </p>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Balance</dt>
+                <dd className="font-medium text-zinc-900">
+                  NGN{" "}
+                  {result.linkedAccount.currentBalance.toLocaleString("en-NG")}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Status</dt>
+                <dd className="font-medium text-emerald-700">Active</dd>
+              </div>
+            </dl>
+            <p className="mt-4 text-sm text-zinc-500">
+              You can now close this page. Your WhatsApp alerts are active and a
+              confirmation has been sent to you.
+            </p>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}

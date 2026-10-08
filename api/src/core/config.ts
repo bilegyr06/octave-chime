@@ -17,6 +17,13 @@ export const config = {
     deviceId: env.TERMII_DEVICE_ID ?? "dev-placeholder",
     templateId: env.TERMII_TEMPLATE_ID ?? "",
   },
+  mono: {
+    mode: (env.MONO_MODE ?? "off") as "off" | "sandbox" | "live",
+    publicKey: env.MONO_PUBLIC_KEY ?? "",
+    secretKey: env.MONO_SECRET_KEY ?? "",
+    baseUrl: env.MONO_BASE_URL ?? "https://api.withmono.com",
+  },
 };
 
 export const isMockMode = () => config.termii.mode !== "live";
+export const isMonoSimulated = () => config.mono.mode === "off";
