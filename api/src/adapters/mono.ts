@@ -53,6 +53,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** Mono v2 returns balances and amounts in minor units (kobo); the domain stores Naira. */
+function toMajor(value: number | string | undefined): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.round((n / 100) * 100) / 100 : 0;
+}
+
 /** Tolerates `{ data: { id } }`, `{ id }` and a bare string code payloads. */
 function readId(payload: { data?: unknown; id?: unknown }): string {
   if (typeof payload === "object" && payload !== null) {
@@ -78,21 +84,25 @@ function realAdapter(): MonoAdapter {
     async getAccount(providerAccountId) {
       type AccountPayload = {
         id?: string;
+        name?: string;
         account_name?: string;
         account_number?: string;
         currency?: string;
         balance?: number | string;
         institution?: { name?: string };
       };
-      const body = await request<{ data?: AccountPayload }>(`/v2/accounts/${providerAccountId}`);
-      const account: AccountPayload = body.data ?? {};
+      const body = await request<{
+        data?: { account?: AccountPayload } & AccountPayload;
+      }>(`/v2/accounts/${providerAccountId}`);
+      const data = (body.data ?? {}) as { account?: AccountPayload } & AccountPayload;
+      const account: AccountPayload = data.account ?? data;
       const number = String(account.account_number ?? "");
       return {
         providerAccountId: String(account.id ?? providerAccountId),
-        accountName: account.account_name ?? "Linked account",
+        accountName: account.name ?? account.account_name ?? "Linked account",
         accountNumber: number,
         currency: account.currency ?? "NGN",
-        balance: Number(account.balance ?? 0),
+        balance: toMajor(account.balance),
         institutionName: account.institution?.name ?? "",
       };
     },
@@ -115,7 +125,7 @@ function realAdapter(): MonoAdapter {
         return {
           reference: String(t.reference ?? t.id ?? `MONO-${Date.now()}`),
           type: t.type === "credit" ? ("credit" as const) : ("debit" as const),
-          amount: Math.abs(Number(t.amount ?? 0)),
+          amount: toMajor(t.amount),
           narration: t.narration ?? null,
           date: t.date ?? new Date().toISOString(),
         };
