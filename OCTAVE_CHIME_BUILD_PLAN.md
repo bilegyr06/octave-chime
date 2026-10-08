@@ -191,6 +191,8 @@ money is spent or any plan is upgraded.
 24-hour customer-service window (started when the customer messages first).
 Proactive messages outside that window require an approved template.
 
+Full provisioning + deployment flow lives in §8 (Phase 8 Deployment Runbook).
+
 ---
 
 ## 4. Spec Corrections (ambiguities resolved in the product spec)
@@ -263,7 +265,7 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
 | 5 | Controls + summary | `PAUSE/RESUME/STOP/START/HELP/PRIVACY/RELINK/BALANCE`, confirmation prompts, re-consent link, cron 21:00 Lagos, Run Now, audit log | opted-out receives no alerts; summary deduped per customer/date | 5h |
 | 6 | UI (all screens) | login, dashboard (9 required tiles), customers, transactions, notifications, settings, `/enroll`, `/consent`, `/status`, dev console | mobile responsiveness check, §15 style compliance | 10h |
 | 7 | E2E + polish | script through all 24 demo steps + full §17 checklist; empty/loading/error states | every §17 item passes without manual DB edits | 5h |
-| 8 | Deploy | Vercel web, Render API, Neon prod, env vars, README, hand webhook URL for Termii console | public enrollment link works end-to-end | 4h |
+| 8 | Deploy | Vercel web, Render API (blueprint + cron), Neon `production` branch, env vars, README, webhook handoff — runbook §8 | public enrollment link works end-to-end | 4h |
 
 **Total ≈ 45h with buffer.** Critical path depends on external readiness:
 Neon connection string, Render/Vercel accounts connected, and (later) Termii
@@ -349,7 +351,128 @@ No commit happens without user sign-off.
 
 ---
 
-## 8. Demo Flow Coverage
+## 8. Phase 8 Deployment Runbook
+
+Phase 8 is config/ops-heavy by design: **deploying requires no provider-code
+rewrite** — every provider sits behind an adapter and an env switch (Termii
+`TERMII_MODE`, Mono `MONO_MODE`, DB via `DATABASE_URL`). Nothing below depends on
+code changes beyond the small `chore/deploy` commit in §8.4.
+
+### 8.1 Scope and gate
+
+- **Branch:** `chore/deploy`, cut from an accepted `develop` (Phases 5–7 complete).
+- **Gate:** "public enrollment link works end-to-end" — a real browser opens a
+  Vercel-hosted enrollment link, links a bank account (sandbox or `off`), and the
+  admin triggers a debit that produces a `sent` notification.
+- **Budget:** all free tiers (Vercel, Render, Neon). Accepted trade-offs: Render
+  free web service sleeps (~50 s cold start on first hit) and free cron runs at
+  most once per day (fits the 21:00 daily summary); Neon free compute autosuspends
+  when idle.
+
+### 8.2 Target topology & wiring
+
+```
+Browser ──▶ Vercel (web: /enroll/[token], bank admin UI)
+               │  NEXT_PUBLIC_API_URL = https://<render>.onrender.com
+               ▼
+          Render (Express API: /api/*, /webhooks/termii, /cron/daily-summary)
+               │  DATABASE_URL (Neon pooled)
+               ▼
+          Neon Postgres ("silent-bread-91848118", branch "production")
+
+Render Cron Job (free, once/day 21:00) ──▶ POST /cron/daily-summary
+       Authorization: Bearer CRON_SECRET
+```
+
+- Enrollment links are minted with `config.appUrl` (`services/bot.ts`) →
+  **`APP_URL` must be the Vercel domain**.
+- Production auth cookie is `secure` + `SameSite=None` (`core/security.ts`) —
+  cross-site HTTPS works; the admin UI must fetch with `credentials: "include"`.
+
+### 8.3 Environment contract
+
+**`api` (Render dashboard):**
+
+| Var | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `APP_URL` | `https://<vercel>.vercel.app` (CORS + enroll links + cookie) |
+| `API_URL` | `https://<render>.onrender.com` |
+| `DATABASE_URL` | Neon **pooled** conn string (`production` branch; host contains `-pooler`) |
+| `DATABASE_URL_UNPOOLED` | Neon **direct** conn string (used by Prisma Migrate) |
+| `SESSION_SECRET`, `JWT_SECRET` | freshly generated random strings (not placeholders) |
+| `TERMII_MODE` | `mock` for the demo; `live` + `TERMII_API_KEY`/`TERMII_DEVICE_ID` at go-live |
+| `MONO_MODE` | `off` (key-less demo) or `sandbox`/`live` (Mono keys) |
+| `MONO_PUBLIC_KEY`, `MONO_SECRET_KEY` | Mono Connect app keys |
+| `CRON_SECRET` | shared bearer token for the cron endpoint |
+| `PORT` | set by Render |
+
+**`web` (Vercel dashboard):**
+
+| Var | Value |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://<render>.onrender.com` |
+| `NEXT_PUBLIC_MONO_PUBLIC_KEY` | Mono Connect **public** key (browser-safe); empty = simulated linking |
+
+### 8.4 Code/artifact deliverables (`chore/deploy` commit)
+
+1. `api/package.json`: add `"engines": { "node": ">=22" }`; change build →
+   `"build": "prisma generate && tsc -p tsconfig.json"` (guarantees client
+   regeneration on the Render build host).
+2. `web/package.json`: matching `engines` (Next 16 requires modern Node).
+3. `api/render.yaml` blueprint (committed IaC):
+   - **Web service** (root `api`, Node 22 via Corepack):
+     - build: `corepack enable && pnpm install --frozen-lockfile && pnpm build`
+     - `preDeployCommand: pnpm db:deploy`
+     - start: `node dist/server.js`; health check path `/api/health`
+   - **Cron job** (free, 1/day): schedule `0 21 * * *`, command
+     `curl -m 60 -X POST https://<render>/cron/daily-summary -H "Authorization: Bearer $CRON_SECRET"`
+     (endpoint delivered by Phase 5).
+4. Root `README.md` (setup + env tables + deploy + ops verification) — replaces
+   boilerplate `web/README.md` as the entry doc.
+
+### 8.5 Infrastructure steps
+
+1. **GitHub:** `gh repo create <name> --private --source . --remote origin --push`
+   → `develop` published (push-to-deploy source for Vercel + Render).
+2. **Neon:** `neon branches create production` in existing project
+   `silent-bread-91848118` (`.neon` already links it) → copy pooled + direct URLs.
+3. **Vercel:** import repo, root directory `web`, Framework Next.js, set web env
+   vars. Free plan.
+4. **Render:** apply `render.yaml` blueprint; key the API service to `api`; paste
+   the `api` env table; deploy.
+
+### 8.6 First deploy + seed
+
+- Apply blueprint → verify `GET /api/health` → `{ ok: true, db: "ok" }`.
+- Migrations run via `preDeployCommand` (`pnpm db:deploy`).
+- Seed exactly **once manually** with prod env (`pnpm db:seed`) so the four demo
+  banks/admins/customers exist — seeding is never chained to deploys.
+- Deploy Vercel → confirm `/enroll/<token>` renders (ƒ dynamic route) and a bank
+  admin login round-trips with the production cookie.
+
+### 8.7 Verification checklist (acceptance gate)
+
+- [ ] `/api/health` ok + Render logs show boot and mock-adapter outbound lines.
+- [ ] `mock-inbound.js` against the **Render** URL → bot replies and mints a
+      token → `https://<vercel>/enroll/<token>` opens in a browser → sandbox/`off`
+      link completes → `LinkedAccount` row `active`.
+- [ ] Admin simulates a debit on prod → `Transaction` created, balance updated,
+      `Notification` status `sent`.
+- [ ] Cron job fires (or manual trigger) → deduped `DailySummary` rows created.
+- [ ] Final handoff: paste `https://<render>/webhooks/termii` into the Termii
+      console webhook config (no-op while `TERMII_MODE=mock`).
+
+### 8.8 Sequencing
+
+Front-loadable **now** (not blocked by Phases 5–7): GitHub repo + remote,
+Vercel/Render/Neon accounts, `production` branch, secret generation. The
+`chore/deploy` commit and the deploy itself run only after Phase 7 acceptance;
+then `main` advances at the milestone.
+
+---
+
+## 9. Demo Flow Coverage
 
 The 24-step presentation script (spec §9) maps to:
 
@@ -361,8 +484,11 @@ The 24-step presentation script (spec §9) maps to:
 
 ---
 
-## 9. Risks
+## 10. Risks
 
+- **Free-tier flakiness** — Render free web service sleeps (cold start) and runs
+  cron at most once/day; Neon autosuspend adds latency on idle wakes. Acceptable
+  for the demo; a Render Starter instance removes them.
 - **48 hours with no scope cuts** — Phase 6 (UI) is the largest single block.
   If we slip, a cut-list will be presented and approved **before** anything is cut.
 - **No live WhatsApp until a Termii device is provisioned** — real delivery is
@@ -379,7 +505,7 @@ The 24-step presentation script (spec §9) maps to:
 
 ---
 
-## 10. Reference Material
+## 11. Reference Material
 
 | File | Role |
 |---|---|
