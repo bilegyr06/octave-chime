@@ -238,14 +238,38 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
     token creates a brand-new `LinkedAccount` (provider exchange), sets the
     previous active account to `disconnected`, and preserves each account's
     transaction history/notifications. `enroll` remains first-link-only.
+12. **Mono Connect init must not send an inline `data.customer`** — the current
+    sandbox/frontend widget rejects any inline customer object with a
+    "Validation Failed" modal. The widget links with `key` + `scope: "auth"` +
+    `reference` only; the customer name/email are omitted.
+13. **Mono v2 payload + units** — `GET /v2/accounts/:id` returns
+    `data.account{ id, name, account_number, currency, balance, institution }`
+    and balances/amounts are minor units (kobo); the adapter maps the nested
+    envelope and converts to Naira before persisting. (Committed as
+    `fix(mono)` / `fix(enroll)`.)
+14. **Phase 6 UI is hand-rolled Tailwind v4** — screens, shells, sidebar and
+    login are built with plain Tailwind classes + native `fetch`/cookie
+    sessions. **No new dependencies**: no shadcn/ui, no component library, no
+    charts library; the 9 tiles render numbers with status accents only.
+15. **Dashboard login is a standard form only** — email + password via
+    `POST /api/auth/login` (httpOnly cookie session). No demo-bank quick-login
+    cards.
+16. **New admin API surface for Phase 6** —
+    `GET /api/transactions` (tenant-scoped, paginated, filterable) backs the
+    Transactions screen, and `GET/PATCH /api/bank/profile` (bank name/logo)
+    backs the Settings screen. Both are added ahead of their UI commits.
+17. **Dev Console is a hidden `/dev` route** — reachable by direct URL only; it
+    is **not** in the sidebar/nav and has no public link. Reuses the mock
+    Termii/Mono patterns for demoing only.
 
 ---
 
 ## 5. Confirmed Assumptions
 
-- **Dev-only mock console** at `/dev/console` — renders a live view of the
-  mocked inbound/outbound bot conversation for debugging and demo fallback.
-  Rendered **only** when `TERMII_MODE=mock`; absent entirely in live mode.
+- **Dev-only console** at a hidden `/dev` route (no nav/sidebar entry, direct
+  URL only) — renders live views of the mocked inbound/outbound bot
+  conversation, transaction simulation, and summary run for debugging and demo
+  fallback. Not linked from any visible surface.
 - **Seed data**: 4 banks (Zenith, Access, GTBank, UBA), 4 bank admins,
   4 customers pre-linked with seeded transactions/notifications (Adaeze Okafor,
   Tunde Balogun, Chiamaka Eze, Ibrahim Musa) so dashboards are never empty —
