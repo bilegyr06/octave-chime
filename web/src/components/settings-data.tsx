@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { Card, ErrorState, Spinner, inputClass } from "@/components/ui";
+import { Card, ErrorState, Spinner, Switch, inputClass } from "@/components/ui";
 
 interface BankProfile {
   id: string;
@@ -12,6 +12,7 @@ interface BankProfile {
   slug: string;
   logoUrl: string | null;
   supportEmail: string | null;
+  whatsappAlertsPaused: boolean;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -21,6 +22,7 @@ interface SavedProfile {
   name: string;
   logoUrl: string;
   supportEmail: string;
+  whatsappAlertsPaused: boolean;
 }
 
 export function SettingsData() {
@@ -36,10 +38,21 @@ export function SettingsData() {
     name: p.name,
     logoUrl: p.logoUrl ?? "",
     supportEmail: p.supportEmail ?? "",
+    whatsappAlertsPaused: p.whatsappAlertsPaused,
   });
 
-  const [draft, setDraft] = useState<SavedProfile>({ name: "", logoUrl: "", supportEmail: "" });
-  const [saved, setSaved] = useState<SavedProfile>({ name: "", logoUrl: "", supportEmail: "" });
+  const [draft, setDraft] = useState<SavedProfile>({
+    name: "",
+    logoUrl: "",
+    supportEmail: "",
+    whatsappAlertsPaused: false,
+  });
+  const [saved, setSaved] = useState<SavedProfile>({
+    name: "",
+    logoUrl: "",
+    supportEmail: "",
+    whatsappAlertsPaused: false,
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -108,7 +121,10 @@ export function SettingsData() {
   }, [selectedBankId]);
 
   const dirty =
-    draft.name !== saved.name || draft.logoUrl !== saved.logoUrl || draft.supportEmail !== saved.supportEmail;
+    draft.name !== saved.name ||
+    draft.logoUrl !== saved.logoUrl ||
+    draft.supportEmail !== saved.supportEmail ||
+    draft.whatsappAlertsPaused !== saved.whatsappAlertsPaused;
 
   async function save() {
     setSaving(true);
@@ -118,6 +134,7 @@ export function SettingsData() {
         name: draft.name,
         logoUrl: draft.logoUrl.trim() === "" ? null : draft.logoUrl.trim(),
         supportEmail: draft.supportEmail.trim() === "" ? null : draft.supportEmail.trim(),
+        whatsappAlertsPaused: draft.whatsappAlertsPaused,
       };
       if (banks) payload.bankId = selectedBankId;
       const updated = await api<BankProfile>("/api/bank/profile", {
@@ -151,12 +168,13 @@ export function SettingsData() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-ink">Settings</h1>
-        <p className="mt-1 text-sm text-mute">
-          Tenant identity and the support contact shown on transaction alerts.
-        </p>
-      </div>
+<div>
+          <h1 className="text-xl font-semibold text-ink">Settings</h1>
+          <p className="mt-1 text-sm text-mute">
+            Tenant identity, the support contact shown on alerts, and the bank-wide
+            WhatsApp pause.
+          </p>
+        </div>
 
       {banks ? (
         <div className="flex items-center gap-3">
@@ -230,6 +248,20 @@ export function SettingsData() {
             />
             <span className="mt-1 block text-xs text-mute">Included on alerts so customers can reach you.</span>
           </label>
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-line bg-canvas px-4 py-3">
+            <span>
+              <span className="block text-sm font-medium text-ink">Pause all WhatsApp alerts</span>
+              <span className="block text-xs text-mute">
+                Temporarily stop transaction alerts and daily summaries for every customer at
+                this bank. Customer-facing statuses are not changed.
+              </span>
+            </span>
+            <Switch
+              checked={draft.whatsappAlertsPaused}
+              onChange={(v) => setDraft({ ...draft, whatsappAlertsPaused: v })}
+              label="Pause all WhatsApp alerts"
+            />
+          </div>
 
           {saveError ? <p className="text-sm font-medium text-danger">{saveError}</p> : null}
 

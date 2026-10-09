@@ -40,6 +40,9 @@ interface SimulateResult {
     transactionDate: string;
   };
   notificationStatus: string;
+  /** Snapshot of the customer/bank this result was posted for. */
+  customerName?: string | null;
+  bankName?: string | null;
 }
 
 interface SummaryReport {
@@ -245,7 +248,11 @@ export function DevConsole() {
           narration: sim.narration.trim() ? sim.narration.trim() : undefined,
         }),
       });
-      setSimResult(result);
+      setSimResult({
+        ...result,
+        customerName: selectedCustomer?.fullName ?? null,
+        bankName: selectedCustomer?.bankName ?? null,
+      });
       setWaReload((n) => n + 1);
     } catch (err) {
       setSimError(err instanceof Error ? err.message : "Simulation failed");
@@ -259,7 +266,12 @@ export function DevConsole() {
     setReport(null);
     setRunError(null);
     try {
-      setReport(await api<SummaryReport>(`${DEV}/summary/run`, { method: "POST" }));
+      setReport(
+        await api<SummaryReport>(`${DEV}/summary/run`, {
+          method: "POST",
+          body: JSON.stringify({ force: true }),
+        }),
+      );
       setWaReload((n) => n + 1);
     } catch (err) {
       setRunError(err instanceof Error ? err.message : "Summary run failed");
@@ -443,8 +455,8 @@ export function DevConsole() {
                 <p className="font-medium text-ink">
                   {simResult.transaction.type === "credit" ? "+" : "−"}
                   {money(simResult.transaction.amount, simResult.transaction.currency)} ·{" "}
-                  {selectedCustomer?.fullName ?? "customer"} ·{" "}
-                  {selectedCustomer?.bankName ?? ""}
+                  {simResult.customerName ?? "customer"} ·{" "}
+                  {simResult.bankName ?? ""}
                 </p>
                 <p className="mt-1 font-mono text-xs text-mute">
                   {simResult.transaction.reference} · balance{" "}

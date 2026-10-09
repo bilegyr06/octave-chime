@@ -3,25 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatDate, formatTime, initials, money } from "@/lib/format";
+import { formatDate, initials, money } from "@/lib/format";
 import {
   consentStatusLabel,
   enrollmentStatusLabel,
   notificationStatusMap,
-  notificationStatusTone,
   notificationTypeLabel,
   serviceStatusMap,
   serviceStatusTone,
 } from "@/lib/status";
-import {
-  Badge,
-  Card,
-  EmptyState,
-  ErrorState,
-  Spinner,
-  Switch,
-  inputClass,
-} from "@/components/ui";
+import { Badge, Card, EmptyState, ErrorState, Spinner } from "@/components/ui";
 
 interface CustomerDetail {
   id: string;
@@ -67,18 +58,10 @@ interface CustomerDetail {
   }[];
 }
 
-const SUMMARY_TIMES = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"];
-const LINK_TTL_MINUTES = 30;
-
 export function CustomerDetail({ id }: { id: string }) {
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
-  const [minting, setMinting] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -104,50 +87,6 @@ export function CustomerDetail({ id }: { id: string }) {
     setLoading(true);
     setError(null);
     setReloadKey((k) => k + 1);
-  }
-
-  async function patch(payload: Record<string, unknown>) {
-    if (!customer) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const updated = await api<CustomerDetail>(`/api/customers/${customer.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-      setCustomer(updated);
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function mintLink() {
-    if (!customer) return;
-    setMinting(true);
-    setSaveError(null);
-    try {
-      setLink(await api<{ url: string; token: string; expiresAt: string }>(
-        `/api/customers/${customer.id}/enroll-link`,
-        { method: "POST" },
-      ));
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Failed to create link");
-    } finally {
-      setMinting(false);
-    }
-  }
-
-  async function copyLink() {
-    if (!link) return;
-    try {
-      await navigator.clipboard.writeText(link.url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
   }
 
   if (loading) return <Spinner label="Loading customer" />;
@@ -186,96 +125,42 @@ export function CustomerDetail({ id }: { id: string }) {
         <p className="text-xs text-mute">Customer since {formatDate(customer.createdAt)}</p>
       </div>
 
-      {saveError ? <p className="text-sm font-medium text-danger">{saveError}</p> : null}
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <div className="border-b border-line px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink">Alert preferences</h2>
+      <Card>
+        <div className="border-b border-line px-5 py-4">
+          <h2 className="text-sm font-semibold text-ink">Alert preferences</h2>
+        </div>
+        <div className="divide-y divide-line">
+          <div className="flex items-center justify-between gap-4 px-5 py-4">
+            <span>
+              <span className="block text-sm font-medium text-ink">WhatsApp alerts</span>
+              <span className="block text-xs text-mute">Transaction alerts to this customer</span>
+            </span>
+            <Badge tone={customer.whatsappAlertsEnabled ? "ok" : "mute"}>
+              {customer.whatsappAlertsEnabled ? "On" : "Off"}
+            </Badge>
           </div>
-          <div className="divide-y divide-line">
-            <label className="flex items-center justify-between gap-4 px-5 py-4">
-              <span>
-                <span className="block text-sm font-medium text-ink">WhatsApp alerts</span>
-                <span className="block text-xs text-mute">Transaction alerts to this customer</span>
-              </span>
-              <Switch
-                checked={customer.whatsappAlertsEnabled}
-                onChange={(v) => patch({ whatsappAlertsEnabled: v })}
-                label="WhatsApp alerts"
-              />
-            </label>
-            <label className="flex items-center justify-between gap-4 px-5 py-4">
-              <span>
-                <span className="block text-sm font-medium text-ink">Daily summary</span>
-                <span className="block text-xs text-mute">End-of-day balance briefing</span>
-              </span>
-              <Switch
-                checked={customer.dailySummaryEnabled}
-                onChange={(v) => patch({ dailySummaryEnabled: v })}
-                label="Daily summary"
-              />
-            </label>
-            <div className="flex items-center justify-between gap-4 px-5 py-4">
-              <span>
-                <span className="block text-sm font-medium text-ink">Summary time</span>
-                <span className="block text-xs text-mute">Local time the briefing is sent</span>
-              </span>
-              <select
-                className={`${inputClass} w-auto`}
-                value={customer.preferredSummaryTime}
-                onChange={(e) => patch({ preferredSummaryTime: e.target.value })}
-              >
-                {SUMMARY_TIMES.map((t) => (
-                  <option key={t} value={t}>
-                    {formatTime(t)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {saving ? <p className="px-5 py-2 text-xs text-mute">Saving…</p> : null}
+          <div className="flex items-center justify-between gap-4 px-5 py-4">
+            <span>
+              <span className="block text-sm font-medium text-ink">Daily summary</span>
+              <span className="block text-xs text-mute">End-of-day balance briefing</span>
+            </span>
+            <Badge tone={customer.dailySummaryEnabled ? "ok" : "mute"}>
+              {customer.dailySummaryEnabled ? "On" : "Off"}
+            </Badge>
           </div>
-        </Card>
-
-        <Card>
-          <div className="border-b border-line px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink">Enrollment invite</h2>
+          <div className="flex items-center justify-between gap-4 px-5 py-4">
+            <span>
+              <span className="block text-sm font-medium text-ink">Summary time</span>
+              <span className="block text-xs text-mute">Local time the briefing is sent</span>
+            </span>
+            <span className="font-mono text-sm text-ink">{customer.preferredSummaryTime}</span>
           </div>
-          <div className="px-5 py-4">
-            <p className="text-sm text-mute">
-              Generate the secure link this customer opens on WhatsApp to link their bank account.
-              A new link invalidates any previous one and expires after {LINK_TTL_MINUTES} minutes.
-            </p>
-            <button
-              type="button"
-              onClick={mintLink}
-              disabled={minting}
-              className="mt-4 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {minting ? "Minting…" : link ? "New invite link" : "Generate invite link"}
-            </button>
-            {link ? (
-              <div className="mt-4">
-                <div className="flex items-center gap-2">
-                  <code className="min-w-0 flex-1 truncate rounded-md border border-line bg-canvas px-3 py-2 font-mono text-xs text-ink">
-                    {link.url}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={copyLink}
-                    className="shrink-0 rounded-md border border-line bg-paper px-3 py-2 text-sm font-medium text-ink hover:border-line-strong"
-                  >
-                    {copied ? "Copied" : "Copy"}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-mute">
-                  Expires {formatDate(link.expiresAt)} · the customer must open it on WhatsApp.
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </Card>
-      </div>
+          <p className="px-5 py-3 text-xs text-mute">
+            These are set by the customer through the WhatsApp bot. To pause alerts
+            for everyone at this bank, use the bank settings.
+          </p>
+        </div>
+      </Card>
 
       <Card>
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -287,7 +172,7 @@ export function CustomerDetail({ id }: { id: string }) {
         {customer.linkedAccounts.length === 0 ? (
           <EmptyState
             title="No linked accounts"
-            hint="Share the invite link above to start the linking flow."
+            hint="Once the customer completes the bank's enrollment link on WhatsApp, their account appears here."
           />
         ) : (
           <div className="divide-y divide-line">
@@ -392,9 +277,9 @@ export function CustomerDetail({ id }: { id: string }) {
                         className={`h-2 w-2 rounded-full ${
                           note?.tone === "whatsapp"
                             ? "bg-whatsapp"
-                            : notificationStatusTone(n.status) === "danger"
+                            : note?.tone === "danger"
                               ? "bg-danger"
-                              : notificationStatusTone(n.status) === "warn"
+                              : note?.tone === "warn"
                                 ? "bg-warn"
                                 : "bg-line-strong"
                         }`}

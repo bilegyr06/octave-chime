@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
@@ -17,7 +16,6 @@ import {
   ErrorState,
   Pagination,
   Spinner,
-  Switch,
   Badge,
   inputClass,
 } from "@/components/ui";
@@ -51,7 +49,6 @@ const SERVICE_FILTERS = ["", ...Object.keys(serviceStatusMap)];
 const ENROLLMENT_FILTERS = ["", ...Object.keys(enrollmentStatusLabel)];
 
 export function CustomersData() {
-  const router = useRouter();
   const [rows, setRows] = useState<CustomerRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -62,15 +59,6 @@ export function CustomersData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [showAdd, setShowAdd] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    fullName: "",
-    whatsappPhone: "",
-    email: "",
-    whatsappAlertsEnabled: true,
-    dailySummaryEnabled: true,
-  });
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), 250);
@@ -121,21 +109,6 @@ export function CustomersData() {
     setReloadKey((k) => k + 1);
   }
 
-  async function addCustomer() {
-    if (!form.fullName.trim()) return;
-    setSaving(true);
-    try {
-      const created = await api<CustomerRow>("/api/customers", {
-        method: "POST",
-        body: JSON.stringify(form),
-      });
-      router.push(`/customers/${created.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create customer");
-      setSaving(false);
-    }
-  }
-
   const selectClass = `${inputClass} w-auto`;
 
   return (
@@ -143,92 +116,11 @@ export function CustomersData() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-ink">Customers</h1>
-          <p className="mt-1 text-sm text-mute">Linked accounts, alert preferences and invite links.</p>
+          <p className="mt-1 text-sm text-mute">
+            Customers enroll themselves through the WhatsApp bot — no admin creation.
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAdd((v) => !v)}
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong"
-        >
-          {showAdd ? "Cancel" : "Add customer"}
-        </button>
       </div>
-
-      {showAdd ? (
-        <Card className="p-5">
-          <form
-            className="grid gap-4 md:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              addCustomer();
-            }}
-          >
-            <label className="block">
-              <span className="text-sm font-medium text-ink">Full name</span>
-              <input
-                className={`${inputClass} mt-1`}
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                placeholder="Ada Lovelace"
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-ink">WhatsApp phone</span>
-              <input
-                className={`${inputClass} mt-1`}
-                value={form.whatsappPhone}
-                onChange={(e) => setForm({ ...form, whatsappPhone: e.target.value })}
-                placeholder="+2348012345678"
-              />
-            </label>
-            <label className="block md:col-span-2">
-              <span className="text-sm font-medium text-ink">Email</span>
-              <input
-                className={`${inputClass} mt-1`}
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="ada@example.com"
-              />
-            </label>
-            <div className="md:col-span-2 flex flex-wrap items-center gap-6">
-              <span className="inline-flex items-center gap-3 text-sm text-ink">
-                WhatsApp alerts
-                <Switch
-                  checked={form.whatsappAlertsEnabled}
-                  onChange={(v) => setForm({ ...form, whatsappAlertsEnabled: v })}
-                  label="WhatsApp alerts"
-                />
-              </span>
-              <span className="inline-flex items-center gap-3 text-sm text-ink">
-                Daily summary
-                <Switch
-                  checked={form.dailySummaryEnabled}
-                  onChange={(v) => setForm({ ...form, dailySummaryEnabled: v })}
-                  label="Daily summary"
-                />
-              </span>
-            </div>
-            <div className="md:col-span-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowAdd(false)}
-                className="rounded-md border border-line bg-paper px-4 py-2 text-sm font-medium text-ink hover:border-line-strong"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving || !form.fullName.trim()}
-                className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {saving ? "Creating…" : "Create customer"}
-              </button>
-            </div>
-          </form>
-        </Card>
-      ) : null}
 
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
@@ -280,7 +172,7 @@ export function CustomersData() {
             hint={
               debouncedQ || serviceStatus || enrollmentStatus
                 ? "Try adjusting the search or filters."
-                : "Add a customer to get started."
+                : "Customers appear here once they enroll through the WhatsApp bot."
             }
           />
         ) : (
