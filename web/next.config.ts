@@ -8,7 +8,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // Browser-origin API calls pass through this same-host proxy so the
     // httpOnly admin session cookie flows naturally (no CORS for UI calls).
-    return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
+    // /webhooks/* feeds the WhatsApp simulator the exact inbound path Termii
+    // would hit in production.
+    return [
+      { source: "/api/:path*", destination: `${apiUrl}/api/:path*` },
+      { source: "/webhooks/:path*", destination: `${apiUrl}/webhooks/:path*` },
+    ];
   },
 };
 

@@ -1,10 +1,11 @@
 export const SESSION_COOKIE = "oc_admin_session";
+export const DEV_SESSION_COOKIE = "oc_dev_session";
 
 export interface SessionAdmin {
   id: string;
   name: string;
   email: string;
-  role: "bank_admin" | "platform_admin";
+  role: "bank_admin" | "platform_admin" | "dev";
   bankId: string | null;
   createdAt: string;
 }
@@ -30,6 +31,22 @@ export async function getSession(): Promise<SessionAdmin | null> {
   if (!token) return null;
 
   const res = await fetch(`${apiBase()}/api/auth/me`, {
+    headers: { cookie: `${token.name}=${token.value}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => null);
+  return body?.admin ?? null;
+}
+
+/** Dev-console session guard — reads `oc_dev_session`, distinct from admins. */
+export async function getDevSession(): Promise<SessionAdmin | null> {
+  const { cookies } = await import("next/headers");
+  const jar = await cookies();
+  const token = jar.get(DEV_SESSION_COOKIE);
+  if (!token) return null;
+
+  const res = await fetch(`${apiBase()}/api/dev/auth/me`, {
     headers: { cookie: `${token.name}=${token.value}` },
     cache: "no-store",
   });
