@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --color-canvas: #e9ede8;
+  --color-paper: #fafbf9;
+  --color-ink: #11201b;
+  --color-mute: #4f625a;
+  --color-line: #d5ddd4;
+  --color-line-strong: #b7c4ba;
+
+  --color-brand: #0a5345;
+  --color-brand-strong: #073c33;
+  --color-brand-soft: #dcebe4;
+
+  --color-signal: #c7851b;
+  --color-signal-soft: #f6ead2;
+
+  --color-whatsapp: #1da851;
+  --color-danger: #a03a2e;
+  --color-danger-soft: #f7e7e3;
+  --color-warn: #9a6b0f;
+  --color-warn-soft: #f3e8ce;
+  --color-ok: #2e7d45;
+  --color-ok-soft: #e1efe2;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes meter-in {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}

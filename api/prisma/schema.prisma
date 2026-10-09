@@ -1,0 +1,316 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum BankStatus {
+  active
+  inactive
+}
+
+enum AdminRole {
+  platform_admin
+  bank_admin
+  dev
+}
+
+enum ConsentStatus {
+  pending
+  granted
+  revoked
+}
+
+enum EnrollmentStatus {
+  not_started
+  in_progress
+  completed
+}
+
+enum ServiceStatus {
+  pending_link
+  active
+  paused
+  opted_out
+  link_expired
+}
+
+enum LinkProvider {
+  mono_simulated
+  mono_live
+  direct_bank_api
+}
+
+enum LinkedAccountStatus {
+  active
+  disconnected
+}
+
+enum TransactionType {
+  debit
+  credit
+}
+
+enum TransactionSource {
+  simulated
+  mono
+  direct_bank
+}
+
+enum NotificationType {
+  transaction_alert
+  daily_summary
+}
+
+enum NotificationChannel {
+  whatsapp
+  email
+  sms
+}
+
+enum NotificationStatus {
+  queued
+  sent
+  failed
+  skipped
+}
+
+enum AuditActorType {
+  platform_admin
+  bank_admin
+  dev
+  system
+  customer
+}
+
+enum LinkTokenMode {
+  enroll
+  reconsent
+  relink
+}
+
+enum BotDirection {
+  inbound
+  outbound
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model Bank {
+  id           String     @id @default(cuid())
+  name         String
+  slug         String     @unique
+  logoUrl      String?
+  supportEmail String?
+  status       BankStatus @default(active)
+  whatsappAlertsPaused Boolean @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  admins        BankAdmin[]
+  customers     Customer[]
+  accounts      LinkedAccount[]
+  transactions  Transaction[]
+  notifications Notification[]
+  dailySummaries DailySummary[]
+  auditLogs     AuditLog[]
+
+  @@index([status])
+}
+
+model BankAdmin {
+  id           String    @id @default(cuid())
+  bankId       String?
+  name         String
+  email        String    @unique
+  passwordHash String?
+  role         AdminRole @default(bank_admin)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  bank Bank? @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  @@index([bankId])
+}
+
+model Customer {
+  id                    String           @id @default(cuid())
+  bankId                String
+  fullName              String
+  email                 String?
+  whatsappPhone         String?          @unique
+  consentStatus         ConsentStatus    @default(pending)
+  enrollmentStatus      EnrollmentStatus @default(not_started)
+  serviceStatus         ServiceStatus    @default(pending_link)
+  whatsappAlertsEnabled Boolean          @default(true)
+  dailySummaryEnabled   Boolean          @default(true)
+  preferredSummaryTime  String           @default("21:00")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  bank             Bank             @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  linkedAccounts   LinkedAccount[]
+  transactions     Transaction[]
+  notifications    Notification[]
+  dailySummaries   DailySummary[]
+  linkTokens       LinkToken[]
+  botMessages      BotMessage[]
+
+  @@index([bankId])
+  @@index([serviceStatus])
+}
+
+model LinkedAccount {
+  id                   String              @id @default(cuid())
+  customerId           String
+  bankId               String
+  provider             LinkProvider        @default(mono_simulated)
+  providerAccountId    String
+  accountName          String
+  accountNumberMasked  String
+  accountType          String              @default("savings")
+  currency             String              @default("NGN")
+  currentBalance       Decimal             @db.Decimal(18, 2)
+  openingBalanceToday  Decimal             @db.Decimal(18, 2)
+  linkedAt             DateTime            @default(now())
+  status               LinkedAccountStatus @default(active)
+
+  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  bank           Bank           @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  dailySummaries DailySummary[]
+
+  @@index([customerId])
+  @@index([bankId])
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  bankId          String
+  customerId      String
+  linkedAccountId String
+  type            TransactionType
+  amount          Decimal           @db.Decimal(18, 2)
+  currency        String            @default("NGN")
+  balanceAfter    Decimal           @db.Decimal(18, 2)
+  narration       String?
+  reference       String
+  transactionDate DateTime
+  source          TransactionSource @default(simulated)
+  createdAt       DateTime          @default(now())
+
+  bank          Bank           @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  linkedAccount LinkedAccount  @relation(fields: [linkedAccountId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([customerId, transactionDate])
+  @@index([bankId, createdAt])
+  @@index([linkedAccountId, transactionDate])
+}
+
+model Notification {
+  id                String              @id @default(cuid())
+  bankId            String
+  customerId        String
+  transactionId     String?
+  type              NotificationType
+  channel           NotificationChannel @default(whatsapp)
+  status            NotificationStatus  @default(queued)
+  recipient         String
+  messageBody       String
+  providerMessageId String?
+  errorMessage      String?
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+
+  bank         Bank          @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transaction  Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  dailySummary DailySummary?
+
+  @@index([bankId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([status])
+}
+
+model DailySummary {
+  id               String   @id @default(cuid())
+  bankId           String
+  customerId       String
+  linkedAccountId  String
+  summaryDate      DateTime @db.Date
+  openingBalance   Decimal  @db.Decimal(18, 2)
+  totalCredits     Decimal  @db.Decimal(18, 2)
+  totalDebits      Decimal  @db.Decimal(18, 2)
+  closingBalance   Decimal  @db.Decimal(18, 2)
+  transactionCount Int      @default(0)
+  notificationId   String?  @unique
+  createdAt        DateTime @default(now())
+
+  bank           Bank           @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  linkedAccount  LinkedAccount  @relation(fields: [linkedAccountId], references: [id], onDelete: Cascade)
+  notification   Notification?  @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  // Dedup guard: one summary per customer per day (Phase 1 gate, spec §11)
+  @@unique([customerId, summaryDate])
+  @@index([bankId, summaryDate])
+}
+
+model AuditLog {
+  id        String         @id @default(cuid())
+  bankId    String?
+  actorType AuditActorType
+  actorId   String
+  action    String
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  bank Bank? @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  @@index([bankId, createdAt])
+  @@index([actorType, actorId])
+}
+
+model LinkToken {
+  id         String         @id @default(cuid())
+  token      String         @unique
+  mode       LinkTokenMode
+  customerId String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([expiresAt])
+}
+
+model BotMessage {
+  id         String       @id @default(cuid())
+  direction  BotDirection
+  // Termii inbound webhook id; unique so duplicate webhooks are no-ops.
+  messageId  String?      @unique
+  sender     String
+  recipient  String?
+  text       String
+  customerId String?
+  createdAt  DateTime     @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@index([sender, createdAt])
+}
