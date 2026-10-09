@@ -9,6 +9,7 @@ import { monoRouter } from "./mono";
 import { transactionsRouter } from "./transactions";
 import { bankRouter } from "./bank";
 import { banksRouter } from "./banks";
+import { devRouter } from "./dev";
 
 export const routes = Router();
 
@@ -23,3 +24,4 @@ routes.use("/mono", monoRouter);
 routes.use("/transactions", transactionsRouter);
 routes.use("/bank", bankRouter);
 routes.use("/banks", banksRouter);
+routes.use("/dev", devRouter);

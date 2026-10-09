@@ -223,8 +223,26 @@ async function main() {
 
   const passwordHash = hashPassword(DEMO_PASSWORD);
   // platform admin has no bank
-  await prisma.bankAdmin.create({
-    data: { name: admins[0].name, email: admins[0].email, passwordHash, role: "platform_admin" },
+  await prisma.bankAdmin.upsert({
+    where: { email: admins[0].email },
+    update: {},
+    create: {
+      name: admins[0].name,
+      email: admins[0].email,
+      passwordHash,
+      role: "platform_admin",
+    },
+  });
+  // dev console operator (Phase 7): own role + own session, no bank.
+  await prisma.bankAdmin.upsert({
+    where: { email: "dev@octavechime.test" },
+    update: { name: "Dev Operator", role: "dev" },
+    create: {
+      name: "Dev Operator",
+      email: "dev@octavechime.test",
+      passwordHash,
+      role: "dev",
+    },
   });
   for (let i = 1; i < admins.length; i++) {
     const bank = banks[i - 1];

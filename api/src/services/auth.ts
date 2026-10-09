@@ -21,6 +21,12 @@ export async function login(input: LoginInput): Promise<LoginResult> {
     throw new AppError("Invalid email or password", 401, "invalid_credentials");
   }
 
+  // Dev operators have their own console session (Phase 7) — they are not
+  // admin-dashboard accounts.
+  if (admin.role === "dev") {
+    throw new AppError("Dev accounts sign in at the dev console", 403, "dev_console_only");
+  }
+
   const token = signSession({ id: admin.id, role: admin.role, bankId: admin.bankId });
 
   await logAudit({

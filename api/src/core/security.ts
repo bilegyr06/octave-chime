@@ -4,6 +4,7 @@ import { config } from "./config";
 import { AppError } from "./errors";
 
 export const SESSION_COOKIE = "oc_admin_session";
+export const DEV_SESSION_COOKIE = "oc_dev_session";
 export const SESSION_SECONDS = 12 * 60 * 60;
 
 // Matches the scrypt format written by prisma/seed.ts: `<saltHex>:<hashHex>`.

@@ -18,6 +18,7 @@ export interface SimulateTxnInput {
   type: TransactionType;
   amount: number;
   narration?: string;
+  bankId?: string;
 }
 
 export interface SimulateTxnResult {
@@ -112,6 +113,12 @@ export async function simulateTransaction(
   });
   if (!customer) throw new AppError("Customer not found", 404, "not_found");
 
+  // Authoritative "which bank this belongs to": a supplied bankId must match
+  // the customer's own bank so cross-bank simulation is never misattributed.
+  if (input.bankId && input.bankId !== customer.bankId) {
+    throw new AppError("Bank does not match the customer's bank", 400, "bank_mismatch");
+  }
+
   const account = customer.linkedAccounts[0];
   if (!account) throw new AppError("Customer has no linked account", 400, "no_linked_account");
 
@@ -199,7 +206,7 @@ export async function simulateTransaction(
 
   await logAudit({
     bankId: customer.bankId,
-    actorType: actor.role === "platform_admin" ? "platform_admin" : "bank_admin",
+    actorType: actor.role,
     actorId: actor.id,
     action: "transaction.simulated",
     metadata: {
