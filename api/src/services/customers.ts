@@ -2,13 +2,11 @@ import { Prisma, type EnrollmentStatus, type ServiceStatus } from "@prisma/clien
 import { prisma } from "../db/prisma";
 import { logAudit } from "../db/audit";
 import { AppError } from "../core/errors";
-import { config } from "../core/config";
 import { toCustomerDomain, type CustomerDomain } from "../models/customer";
 import type { AdminPrincipal } from "../models/admin";
-import type { CreateCustomerInput, UpdateCustomerInput } from "../schemas/customer";
+import type { UpdateCustomerInput } from "../schemas/customer";
 import type { Page } from "../schemas/query";
 import { resolveBankScope } from "./scope";
-import { issueLinkToken, LINK_TOKEN_TTL_MS } from "./linkToken";
 
 export interface CustomerListInput {
   page: number;
@@ -91,44 +89,6 @@ export async function listCustomers(
   };
 }
 
-export interface EnrollLinkResult {
-  url: string;
-  token: string;
-  expiresAt: Date;
-}
-
-/**
- * Phase 6: mint the standard secure enrollment link for a customer so a bank
- * admin can surface it as a copyable field (build plan §4.6). Issuing a new
- * link revokes any earlier unconsumed enroll token for the same customer.
- */
-export async function issueCustomerEnrollLink(
-  actor: AdminPrincipal,
-  customerId: string,
-): Promise<EnrollLinkResult> {
-  const bankId = await resolveBankScope(actor);
-  const customer = await prisma.customer.findFirst({
-    where: { id: customerId, ...(bankId ? { bankId } : {}) },
-    select: { id: true, bankId: true },
-  });
-  if (!customer) throw new AppError("Customer not found", 404, "not_found");
-
-  const token = await issueLinkToken(customer.id, "enroll");
-  await logAudit({
-    bankId: customer.bankId,
-    actorType: actor.role,
-    actorId: actor.id,
-    action: "customer.invite_link_issued",
-    metadata: { customerId: customer.id },
-  });
-
-  return {
-    url: `${config.appUrl.replace(/\/+$/, "")}/enroll/${token}`,
-    token,
-    expiresAt: new Date(Date.now() + LINK_TOKEN_TTL_MS),
-  };
-}
-
 export async function getCustomer(
   actor: AdminPrincipal,
   customerId: string,
@@ -188,42 +148,6 @@ export async function getCustomer(
   };
 }
 
-export async function createCustomer(
-  actor: AdminPrincipal,
-  input: CreateCustomerInput,
-): Promise<CustomerDomain> {
-  const bankId = await resolveBankScope(actor, input.bankId);
-  if (!bankId) {
-    throw new AppError("bankId is required for platform admins", 400, "validation_error");
-  }
-
-  const customer = await prisma.customer.create({
-    data: {
-      bankId,
-      fullName: input.fullName,
-      email: input.email ?? null,
-      whatsappPhone: input.whatsappPhone ?? null,
-      consentStatus: "pending",
-      enrollmentStatus: "not_started",
-      serviceStatus: "pending_link",
-      whatsappAlertsEnabled: input.whatsappAlertsEnabled,
-      dailySummaryEnabled: input.dailySummaryEnabled,
-      preferredSummaryTime: input.preferredSummaryTime,
-    },
-    include: { bank: { select: { name: true } } },
-  });
-
-  await logAudit({
-    bankId: customer.bankId,
-    actorType: actor.role,
-    actorId: actor.id,
-    action: "customer.create",
-    metadata: { customerId: customer.id, fullName: customer.fullName },
-  });
-
-  return toCustomerDomain(customer);
-}
-
 export async function updateCustomer(
   actor: AdminPrincipal,
   customerId: string,
@@ -241,11 +165,6 @@ export async function updateCustomer(
       fullName: input.fullName,
       email: input.email !== undefined ? input.email : undefined,
       whatsappPhone: input.whatsappPhone,
-      whatsappAlertsEnabled: input.whatsappAlertsEnabled,
-      dailySummaryEnabled: input.dailySummaryEnabled,
-      preferredSummaryTime: input.preferredSummaryTime,
-      serviceStatus: input.serviceStatus,
-      consentStatus: input.consentStatus,
     },
     include: { bank: { select: { name: true } } },
   });
@@ -254,11 +173,8 @@ export async function updateCustomer(
     bankId: updated.bankId,
     actorType: actor.role,
     actorId: actor.id,
-    action: `customer.${input.serviceStatus ? "set_status" : "update"}`,
-    metadata: {
-      customerId: updated.id,
-      ...(input.serviceStatus ? { serviceStatus: input.serviceStatus } : {}),
-    },
+    action: "customer.update",
+    metadata: { customerId: updated.id },
   });
 
   return toCustomerDomain(updated);
