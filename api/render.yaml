@@ -38,8 +38,8 @@ services:
   - type: cron
     name: octave-chime-daily-summary
     runtime: node
-    schedule: "0 21 * * *"
-    command: curl -m 60 -sS -X POST "$API_URL/cron/daily-summary" -H "Authorization: Bearer $CRON_SECRET"
+    schedule: '0 21 * * *'
+    command: 'curl -m 60 -sS -X POST "$API_URL/cron/daily-summary" -H "Authorization: Bearer $CRON_SECRET"'
     envVars:
       - key: API_URL
         sync: false
