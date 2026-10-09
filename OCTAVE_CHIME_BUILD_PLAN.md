@@ -261,6 +261,37 @@ These amendments override/clarify `OCTAVE_CHIME_IMPLEMENTATION_PLAN.md`:
 17. **Dev Console is a hidden `/dev` route** — reachable by direct URL only; it
     is **not** in the sidebar/nav and has no public link. Reuses the mock
     Termii/Mono patterns for demoing only.
+    > **Superseded by amendment 18 (Phase 7).**
+18. **Dev Console = its own login-gated zone (Phase 7).** Replaces the
+    ride-on-admin-session approach in 17:
+    - New `dev` `AdminRole` + `AuditActorType`, seeded as
+      `dev@octavechime.test` / `Password123!`, independent of bank/platform
+      admins.
+    - Own session cookie `oc_dev_session`, own `/dev/login` page, and a `/dev`
+      route group **outside** `(dashboard)`. The admin cookie never unlocks
+      `/dev`; the dev cookie never unlocks `/overview` or the admin screens.
+      `requireDevAuth` guards a dedicated **`/api/dev/*` surface** (auth/me,
+      banks, customers, transactions/simulate, summary/run, metrics, message
+      transcript, session reset). Admin endpoints are untouched.
+    - **Smart simulation**: the simulate form has linked Bank ↔ Customer
+      selectors — the bank list narrows customers to that bank (`?bankId=`),
+      and picking a customer sets Bank to the customer's own bank. `simulate`
+      accepts an optional `bankId` that the server validates against the
+      customer's bank (authoritative "which bank it is sent to").
+    - **WhatsApp simulator**: dev-only panel that drives the *real* inbound
+      path — it POSTs the exact Termii webhook shape to `/webhooks/termii`
+      (proxied by a Next `/webhooks/*` rewrite) and reads the thread back from
+      `botMessage`. Sender phone defaults to a fresh number (`2348030000000`)
+      for clean enrollments, with quick-fill for seeded customers.
+      Quick-command chips (`START · 1–4 · YES · PAUSE · RESUME · STOP · NO ·
+      HELP`) fill the input, never auto-send. The panel is disabled with a
+      warning when `TERMII_MODE=live` so it cannot message real numbers.
+      Transcript polls every ~2s; bot-issued enroll links render clickable.
+    - **Phase 7 runbook**: drive the full 24-step demo flow (§9) using the
+      WhatsApp simulator as the customer surface + the admin UI/API as the
+      bank surface; script each §17 acceptance item; sweep empty/loading/error
+      states across every screen. Gate: every §17 item passes **without manual
+      DB edits**.
 
 ---
 
