@@ -28,6 +28,18 @@ import { requireDevAuth } from "./middleware";
  * console simulates cross-bank transactions, runs summaries, drives the
  * WhatsApp mock inbound path, and reads the bot transcript back.
  */
+
+/** One row of the simulator transcript: bot chat OR a delivered/skipped alert. */
+interface TranscriptItem {
+  id: string;
+  direction: "inbound" | "outbound";
+  text: string;
+  createdAt: string;
+  customerId: string | null;
+  kind: "bot" | "alert" | "summary";
+  status?: string;
+  errorMessage?: string | null;
+}
 export const devRouter = Router();
 
 devRouter.post("/auth/login", async (req, res, next) => {
@@ -141,21 +153,64 @@ devRouter.get("/metrics", requireDevAuth, async (req, res, next) => {
   }
 });
 
-/** WhatsApp simulator transcript for one sender phone (newest last, last 60). */
+/** WhatsApp simulator transcript for one sender phone (newest last, last 60).
+ *  Combines bot lifecycle messages (botMessage) with outbound SMS/WhatsApp
+ *  alerts and daily summaries (Notification rows) so the whole conversation -
+ *  delivered or not - is visible in the simulator. */
 devRouter.get("/messages", requireDevAuth, async (req, res, next) => {
   try {
     const phoneRaw = typeof req.query.phone === "string" ? req.query.phone : "";
     if (!phoneRaw) throw new AppError("phone is required", 400, "validation_error");
     const phone = normalizePhone(phoneRaw);
 
-    const rows = await prisma.botMessage.findMany({
-      where: { sender: phone },
-      orderBy: { createdAt: "desc" },
-      take: 60,
-      select: { id: true, direction: true, text: true, createdAt: true, customerId: true },
-    });
+    const [chatRows, alertRows] = await Promise.all([
+      prisma.botMessage.findMany({
+        where: { sender: phone },
+        orderBy: { createdAt: "desc" },
+        take: 60,
+        select: { id: true, direction: true, text: true, createdAt: true, customerId: true },
+      }),
+      prisma.notification.findMany({
+        where: { recipient: phone },
+        orderBy: { createdAt: "desc" },
+        take: 60,
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          messageBody: true,
+          errorMessage: true,
+          createdAt: true,
+          customerId: true,
+        },
+      }),
+    ]);
 
-    res.json({ phone, items: rows.reverse() });
+    const items: TranscriptItem[] = [];
+    for (const row of chatRows) {
+      items.push({
+        id: row.id,
+        direction: row.direction,
+        text: row.text,
+        createdAt: row.createdAt.toISOString(),
+        customerId: row.customerId,
+        kind: "bot",
+      });
+    }
+    for (const row of alertRows) {
+      items.push({
+        id: row.id,
+        direction: "outbound",
+        text: row.messageBody,
+        createdAt: row.createdAt.toISOString(),
+        customerId: row.customerId,
+        kind: row.type === "daily_summary" ? "summary" : "alert",
+        status: row.status,
+        errorMessage: row.errorMessage,
+      });
+    }
+    items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    res.json({ items: items.slice(-60) });
   } catch (err) {
     next(err);
   }
