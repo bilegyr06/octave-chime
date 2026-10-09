@@ -22,11 +22,12 @@ export function TermiiChip() {
   const live = mode === "live";
 
   return (
-    <span className="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-2.5 py-1 font-mono text-xs text-mute">
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${live ? "bg-whatsapp" : "bg-line-strong"}`}
-      />
-      Termii · {mode}
+    <span
+      title="Delivery adapter mode"
+      className="inline-flex items-center gap-2 rounded-[3px] border border-line bg-paper px-2.5 py-1 text-xs font-medium text-mute"
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-whatsapp" : "bg-line-strong"}`} />
+      {mode}
     </span>
   );
 }

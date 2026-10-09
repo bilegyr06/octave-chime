@@ -9,7 +9,7 @@ import {
   notificationTypeLabel,
   serviceStatusMap,
 } from "@/lib/status";
-import { Badge, Card, EmptyState, ErrorState, Spinner, StatTile } from "./ui";
+import { Badge, Card, EmptyState, ErrorState, Led, Spinner } from "./ui";
 import { ChevronRightIcon } from "./icons";
 
 interface RecentEnrollment {
@@ -43,10 +43,13 @@ interface DashboardMetrics {
   generatedAt: string;
 }
 
-function PanelHeader({ title, href }: { title: string; href?: string }) {
+function PanelHeader({ title, href, led = "brand" }: { title: string; href?: string; led?: "brand" | "signal" | "danger" }) {
   return (
     <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-      <h2 className="text-sm font-semibold text-ink">{title}</h2>
+      <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+        <Led tone={led} />
+        {title}
+      </h2>
       {href ? (
         <Link
           href={href}
@@ -57,6 +60,66 @@ function PanelHeader({ title, href }: { title: string; href?: string }) {
         </Link>
       ) : null}
     </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-xs text-mute">{label}</p>
+      <p className="mt-0.5 font-display text-xl font-semibold tracking-tight tabular text-ink">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
+  const attempts = metrics.alertsSentToday + metrics.failedAlertsToday;
+  const rate = attempts > 0 ? metrics.alertsSentToday / attempts : 0;
+  const filled = attempts > 0 ? Math.max(1, Math.min(8, Math.round(rate * 8))) : 0;
+  const liveEdge = attempts > 0 && metrics.failedAlertsToday > 0;
+  return (
+    <Card className="px-5 py-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+        <div>
+          <p className="flex items-center gap-2 text-sm text-mute">
+            <Led tone={metrics.failedAlertsToday > 0 ? "danger" : "whatsapp"} />
+            Alerts delivered today
+          </p>
+          <p className="mt-1 font-display text-[44px] font-semibold leading-none tracking-tight tabular text-ink">
+            {metrics.alertsSentToday}
+          </p>
+          <p className="mt-2 text-sm text-mute">
+            {attempts === 0
+              ? "Nothing sent yet today"
+              : metrics.failedAlertsToday > 0
+                ? `${metrics.failedAlertsToday} failed to send`
+                : "All delivering clean"}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-4">
+          <MiniStat label="Enrolled customers" value={metrics.enrolledCustomers} />
+          <MiniStat label="Linked accounts" value={metrics.linkedAccounts} />
+          <MiniStat label="WhatsApp enabled" value={metrics.whatsappEnabledCustomers} />
+          <MiniStat label="Daily summaries" value={metrics.dailySummariesToday} />
+        </div>
+      </div>
+      <div
+        aria-hidden
+        className="mt-6 flex items-end gap-1"
+      >
+        {Array.from({ length: 8 }, (_, i) => i < filled).map((on, i) => (
+          <span
+            key={i}
+            style={{ animationDelay: `${i * 45}ms` }}
+            className={`h-7 flex-1 origin-bottom rounded-[2px] motion-safe:animate-[meter-in_0.45s_ease-out_both] ${
+              on ? (liveEdge && i === filled - 1 ? "bg-signal" : "bg-brand") : "bg-line/60"
+            }`}
+          />
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -99,33 +162,13 @@ export function OverviewData() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-ink">Overview</h1>
-          <p className="mt-1 text-sm text-mute">
-            {metrics.bank?.name ?? "Platform"} · WhatsApp transaction alerts
-          </p>
+          <h1 className="font-display text-[28px] font-semibold tracking-tight text-ink">Overview</h1>
+          <p className="mt-1 text-sm text-mute">{metrics.bank?.name ?? "Platform"}</p>
         </div>
-        <p className="font-mono text-xs text-mute">
-          updated {formatDate(metrics.generatedAt)}
-        </p>
+        <p className="text-xs text-mute">updated {formatDate(metrics.generatedAt)}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatTile label="Enrolled customers" value={metrics.enrolledCustomers} sub="completed enrollment" />
-        <StatTile label="Linked accounts" value={metrics.linkedAccounts} sub="active bank connections" />
-        <StatTile
-          label="WhatsApp-enabled"
-          value={metrics.whatsappEnabledCustomers}
-          sub="alerts switched on"
-        />
-        <StatTile label="Alerts sent today" value={metrics.alertsSentToday} sub="transaction alerts" />
-        <StatTile
-          label="Failed alerts today"
-          value={metrics.failedAlertsToday}
-          sub="delivery errors"
-          emphasis={metrics.failedAlertsToday > 0 ? "danger" : "neutral"}
-        />
-        <StatTile label="Daily summaries sent" value={metrics.dailySummariesToday} sub="end-of-day briefing" />
-      </div>
+      <SignalBar metrics={metrics} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="overflow-hidden">

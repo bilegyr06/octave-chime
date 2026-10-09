@@ -1,26 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
-  --color-canvas: #f4f6f3;
-  --color-paper: #ffffff;
-  --color-ink: #132026;
-  --color-mute: #5b6b6f;
-  --color-line: #dde3e1;
-  --color-line-strong: #c3cecb;
+  --color-canvas: #e9ede8;
+  --color-paper: #fafbf9;
+  --color-ink: #11201b;
+  --color-mute: #4f625a;
+  --color-line: #d5ddd4;
+  --color-line-strong: #b7c4ba;
 
-  --color-brand: #0f6b5a;
-  --color-brand-strong: #0a4f42;
-  --color-brand-soft: #e6f1ec;
+  --color-brand: #0a5345;
+  --color-brand-strong: #073c33;
+  --color-brand-soft: #dcebe4;
 
-  --color-whatsapp: #25d366;
-  --color-danger: #b42318;
-  --color-danger-soft: #fdecea;
-  --color-warn: #b54708;
-  --color-warn-soft: #fdf1e4;
-  --color-ok-soft: #e3f3e9;
+  --color-signal: #c7851b;
+  --color-signal-soft: #f6ead2;
+
+  --color-whatsapp: #1da851;
+  --color-danger: #a03a2e;
+  --color-danger-soft: #f7e7e3;
+  --color-warn: #9a6b0f;
+  --color-warn-soft: #f3e8ce;
+  --color-ok: #2e7d45;
+  --color-ok-soft: #e1efe2;
 }
 
 @layer base {
@@ -37,5 +42,14 @@
 @layer utilities {
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes meter-in {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
   }
 }

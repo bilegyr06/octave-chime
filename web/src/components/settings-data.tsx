@@ -169,7 +169,7 @@ export function SettingsData() {
   return (
     <div className="space-y-5">
 <div>
-          <h1 className="text-xl font-semibold text-ink">Settings</h1>
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Settings</h1>
           <p className="mt-1 text-sm text-mute">
             Tenant identity, the support contact shown on alerts, and the bank-wide
             WhatsApp pause.
@@ -203,17 +203,17 @@ export function SettingsData() {
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
-              className="h-10 w-10 rounded-lg border border-line bg-canvas object-contain"
+              className="h-10 w-10 rounded-[3px] border border-line bg-canvas object-contain"
             />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-soft font-mono text-sm font-medium text-brand">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[3px] bg-brand-soft font-display text-sm font-semibold text-brand">
               {profile.name.slice(0, 1).toUpperCase()}
             </div>
           )}
           <div>
-            <h2 className="text-sm font-semibold text-ink">{profile.name}</h2>
+            <h2 className="font-display text-[15px] font-semibold text-ink">{profile.name}</h2>
             <p className="text-xs text-mute">
-              {profile.slug} · {profile.status}
+              {profile.slug}, {profile.status}
             </p>
           </div>
         </div>
@@ -248,7 +248,7 @@ export function SettingsData() {
             />
             <span className="mt-1 block text-xs text-mute">Included on alerts so customers can reach you.</span>
           </label>
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-line bg-canvas px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-line bg-canvas px-4 py-3">
             <span>
               <span className="block text-sm font-medium text-ink">Pause all WhatsApp alerts</span>
               <span className="block text-xs text-mute">
@@ -270,7 +270,7 @@ export function SettingsData() {
               type="button"
               disabled={saving || !dirty || !draft.name.trim()}
               onClick={save}
-              className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-[3px] bg-brand px-4 py-2 text-sm font-medium text-paper hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
@@ -281,7 +281,7 @@ export function SettingsData() {
                 setDraft(saved);
                 setSaveError(null);
               }}
-              className="rounded-md border border-line bg-paper px-4 py-2 text-sm font-medium text-ink hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-[3px] border border-line bg-paper px-4 py-2 text-sm font-medium text-ink hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-40"
             >
               Reset
             </button>

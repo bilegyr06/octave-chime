@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { money } from "@/lib/format";
 import { notificationStatusMap, notificationStatusTone } from "@/lib/status";
-import { Badge, Card, ErrorState, Spinner, inputClass } from "@/components/ui";
+import { Badge, Card, ErrorState, Led, Spinner, inputClass } from "@/components/ui";
 
 const DEV = "/api/dev";
 
@@ -81,7 +81,7 @@ interface TranscriptMsg {
 function notificationBadgeLabel(m: TranscriptMsg): string {
   if (m.status === "sent") return "Delivered";
   if (m.status === "queued") return "Queued";
-  return `Not delivered · ${m.errorMessage ?? m.status ?? "—"}`;
+  return `Not delivered: ${m.errorMessage ?? m.status ?? "unknown"}`;
 }
 
 const URL_RE = /(https?:\/\/\S+)/g;
@@ -340,7 +340,7 @@ export function DevConsole() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-ink">Demo controls</h1>
+        <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Demo controls</h1>
         <p className="mt-1 text-sm text-mute">
           Simulated transactions, daily summary runs, and the WhatsApp mock inbound —
           all cross-bank through the dev operator session.
@@ -350,7 +350,10 @@ export function DevConsole() {
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <div className="border-b border-line px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink">Simulate a transaction</h2>
+            <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+              <Led tone="signal" />
+              Simulate a transaction
+            </h2>
             <p className="mt-0.5 text-xs text-mute">
               Posts a verified ledger entry and runs the real WhatsApp alert pipeline.
             </p>
@@ -391,8 +394,8 @@ export function DevConsole() {
                 <option value="">Select customer…</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.fullName} · {c.bankName}
-                    {c.whatsappPhone ? ` · ${c.whatsappPhone}` : ""}
+                    {c.fullName}, {c.bankName}
+                    {c.whatsappPhone ? `, ${c.whatsappPhone}` : ""}
                   </option>
                 ))}
               </select>
@@ -445,29 +448,33 @@ export function DevConsole() {
             <button
               type="submit"
               disabled={simBusy || !sim.customerId || !Number(sim.amount)}
-              className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-[3px] bg-brand px-4 py-2 text-sm font-medium text-paper hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
             >
               {simBusy ? "Posting…" : "Post simulated transaction"}
             </button>
 
             {simResult ? (
-              <div className="rounded-md border border-line bg-canvas px-4 py-3 text-sm">
-                <p className="font-medium text-ink">
-                  {simResult.transaction.type === "credit" ? "+" : "−"}
-                  {money(simResult.transaction.amount, simResult.transaction.currency)} ·{" "}
-                  {simResult.customerName ?? "customer"} ·{" "}
-                  {simResult.bankName ?? ""}
+              <div className="rounded-[3px] border border-line bg-canvas px-4 py-3 text-sm">
+                <p className="flex items-center justify-between gap-3 font-medium text-ink">
+                  <span>
+                    {simResult.transaction.type === "credit" ? "+" : "−"}
+                    {money(simResult.transaction.amount, simResult.transaction.currency)}
+                  </span>
+                  <span className="truncate text-xs text-mute">
+                    {simResult.customerName ?? "customer"}, {simResult.bankName ?? ""}
+                  </span>
                 </p>
                 <p className="mt-1 font-mono text-xs text-mute">
-                  {simResult.transaction.reference} · balance{" "}
-                  {money(simResult.transaction.balanceAfter, simResult.transaction.currency)}
+                  {simResult.transaction.reference}
+                </p>
+                <p className="text-xs text-mute">
+                  Balance {money(simResult.transaction.balanceAfter, simResult.transaction.currency)}
                 </p>
                 <p className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-ink">
                   <Badge tone={notificationStatusTone(simResult.notificationStatus)}>
                     {notificationStatusMap[simResult.notificationStatus]?.label ??
                       simResult.notificationStatus}
                   </Badge>
-                  WhatsApp delivery
                 </p>
               </div>
             ) : null}
@@ -476,7 +483,10 @@ export function DevConsole() {
 
         <Card>
           <div className="border-b border-line px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink">Daily summary run</h2>
+            <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+              <Led tone="brand" />
+              Daily summary run
+            </h2>
             <p className="mt-0.5 text-xs text-mute">
               Equivalent of the 21:00 Lagos cron — generates and delivers end-of-day briefings now.
             </p>
@@ -486,7 +496,7 @@ export function DevConsole() {
               type="button"
               onClick={runSummary}
               disabled={runBusy}
-              className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-[3px] bg-brand px-4 py-2 text-sm font-medium text-paper hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
             >
               {runBusy ? "Running…" : "Run now"}
             </button>
@@ -494,9 +504,9 @@ export function DevConsole() {
             {runError ? <p className="mt-4 text-sm font-medium text-danger">{runError}</p> : null}
 
             {report ? (
-              <div className="mt-4 rounded-md border border-line bg-canvas px-4 py-3">
+              <div className="mt-4 rounded-[3px] border border-line bg-canvas px-4 py-3">
                 <p className="text-sm font-medium text-ink">
-                  {report.dateLabel} · {report.generated} generated
+                  {report.dateLabel}, {report.generated} generated
                 </p>
                 <dl className="mt-3 grid grid-cols-3 gap-3">
                   {(
@@ -509,10 +519,10 @@ export function DevConsole() {
                       ["skipped", "Skipped"],
                     ] as const
                   ).map(([key, label]) => (
-                    <div key={key} className="rounded-md bg-paper px-3 py-2">
+                    <div key={key} className="rounded-[3px] bg-paper px-3 py-2">
                       <dt className="text-xs text-mute">{label}</dt>
                       <dd
-                        className={`font-mono text-lg font-medium tabular ${
+                        className={`font-display text-lg font-semibold tabular ${
                           key === "failed" && report.failed > 0 ? "text-danger" : "text-ink"
                         }`}
                       >
@@ -533,19 +543,26 @@ export function DevConsole() {
         <Card className="grid max-h-[690px] grid-rows-[auto_1fr]">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <div>
-              <h2 className="text-sm font-semibold text-ink">WhatsApp simulator</h2>
+              <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+                <Led tone={simDisabled ? "danger" : "whatsapp"} />
+                WhatsApp simulator
+              </h2>
               <p className="mt-0.5 text-xs text-mute">
                 Drives the real <span className="font-mono">/webhooks/termii</span> inbound path.
               </p>
             </div>
             <Badge tone={simDisabled ? "warn" : waMode === "mock" ? "whatsapp" : "mute"}>
-              {simDisabled ? "live — disabled" : waMode === "mock" ? "offline mock" : "termii " + (waMode ?? "?")}
+              {simDisabled
+                ? "live, simulator off"
+                : waMode === "mock"
+                  ? "offline mock"
+                  : `termii ${waMode ?? "offline"}`}
             </Badge>
           </div>
 
           <div className="flex min-h-0 flex-col gap-3 px-5 py-5">
             {simDisabled ? (
-              <p className="rounded-md border border-warn/30 bg-warn/5 px-3 py-2 text-sm text-warn">
+              <p className="rounded-[3px] border border-warn/30 bg-warn/5 px-3 py-2 text-sm text-warn">
                 Termii is in live mode — the simulator is disabled so it cannot
                 message real WhatsApp numbers.
               </p>
@@ -567,7 +584,7 @@ export function DevConsole() {
                   type="button"
                   onClick={() => setWaPhone("2348030000000")}
                   disabled={simDisabled}
-                  className="flex-1 rounded-md border border-line bg-paper px-3 py-2 text-xs font-medium text-ink hover:border-line-strong disabled:opacity-50"
+                  className="flex-1 rounded-[3px] border border-line bg-paper px-3 py-2 text-xs font-medium text-ink hover:border-line-strong disabled:opacity-50"
                   title="Fresh phone for a clean new-customer enrollment"
                 >
                   Fresh number
@@ -576,7 +593,7 @@ export function DevConsole() {
                   type="button"
                   onClick={() => setWaPhone("+2348012345604")}
                   disabled={simDisabled}
-                  className="flex-1 rounded-md border border-line bg-paper px-3 py-2 text-xs font-medium text-ink hover:border-line-strong disabled:opacity-50"
+                  className="flex-1 rounded-[3px] border border-line bg-paper px-3 py-2 text-xs font-medium text-ink hover:border-line-strong disabled:opacity-50"
                   title="Quick-fill the seeded customer to demo PAUSE/STOP/re-consent"
                 >
                   Seeded customer
@@ -591,7 +608,7 @@ export function DevConsole() {
                   type="button"
                   onClick={() => chip(c)}
                   disabled={simDisabled}
-                  className="rounded-md border border-line bg-canvas px-2 py-1 font-mono text-xs text-ink transition-colors hover:border-line-strong hover:bg-paper disabled:opacity-50"
+                  className="rounded-[3px] border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink transition-colors hover:border-line-strong hover:bg-paper disabled:opacity-50"
                 >
                   {c}
                 </button>
@@ -616,7 +633,7 @@ export function DevConsole() {
                 type="button"
                 onClick={() => void sendWa()}
                 disabled={simDisabled || waBusy || !waMessage.trim() || !waPhone.trim()}
-                className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-[3px] bg-brand px-4 py-2 text-sm font-medium text-paper hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {waBusy ? "Sending…" : "Send"}
               </button>
@@ -626,7 +643,7 @@ export function DevConsole() {
 
             <div
               ref={transcriptRef}
-              className="mt-1 min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-auto rounded-md border border-line bg-canvas p-3"
+              className="mt-1 min-h-0 flex-1 space-y-2.5 overflow-x-hidden overflow-y-auto rounded-[3px] border border-line bg-canvas p-3"
             >
               {transcript.length === 0 ? (
                 <p className="text-center text-xs text-mute">
@@ -646,22 +663,21 @@ export function DevConsole() {
                   return (
                     <div
                       key={m.id}
-                      className={`max-w-[85%] break-words rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                      className={`max-w-[85%] break-words rounded-[4px] px-3 py-2 text-sm whitespace-pre-wrap ${
                         m.direction === "inbound"
                           ? "ml-auto bg-brand-soft text-ink"
                           : "mr-auto border border-line bg-paper text-ink"
                       }`}
                     >
-                      <p className="mb-0.5 text-[10px] uppercase tracking-wide text-mute">
+                      <p className="mb-0.5 text-[11px] font-medium text-mute">
                         {senderLabel}
                       </p>
                       {withLinks(m.text)}
                       {isNotification ? (
-                        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-mute">
+                        <p className="mt-1.5">
                           <Badge tone={notificationStatusTone(m.status ?? "")}>
                             {notificationBadgeLabel(m)}
                           </Badge>
-                          delivery
                         </p>
                       ) : null}
                     </div>
@@ -676,7 +692,10 @@ export function DevConsole() {
       <Card>
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-ink">Cross-bank metrics</h2>
+            <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+              <Led tone="ok" />
+              Cross-bank metrics
+            </h2>
             <p className="mt-0.5 text-xs text-mute">
               Live dashboard figures per tenant bank — all accessible to the dev operator.
             </p>
@@ -697,7 +716,7 @@ export function DevConsole() {
             <button
               type="button"
               onClick={() => setMetricsKey((n) => n + 1)}
-              className="rounded-md border border-line bg-paper px-3 py-1.5 text-sm font-medium text-ink hover:border-line-strong"
+              className="rounded-[3px] border border-line bg-paper px-3 py-1.5 text-sm font-medium text-ink hover:border-line-strong"
             >
               Refresh
             </button>
@@ -707,7 +726,7 @@ export function DevConsole() {
           <Spinner label="Loading metrics" />
         ) : (
           <div className="divide-y divide-line">
-            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium uppercase text-mute sm:grid sm:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr]">
+            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium text-mute sm:grid sm:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr]">
               <span>Bank</span>
               <span className="text-right">Enrolled</span>
               <span className="text-right">Linked</span>
@@ -720,18 +739,18 @@ export function DevConsole() {
                 className="grid items-center gap-4 px-5 py-3 sm:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr]"
               >
                 <span className="text-sm font-medium text-ink">{m.bank?.name ?? "—"}</span>
-                <span className="text-right font-mono text-sm tabular text-ink">
+                <span className="text-right text-sm tabular text-ink">
                   {m.enrolledCustomers}
                 </span>
-                <span className="text-right font-mono text-sm tabular text-ink">
+                <span className="text-right text-sm tabular text-ink">
                   {m.linkedAccounts}
                 </span>
-                <span className="text-right font-mono text-sm tabular text-ink">
+                <span className="text-right text-sm tabular text-ink">
                   {m.whatsappEnabledCustomers}
                 </span>
                 <span className="text-right">
                   <span
-                    className={`inline-flex items-center gap-1.5 font-mono text-sm tabular ${
+                    className={`inline-flex items-center gap-1.5 text-sm tabular ${
                       m.alertsSentToday > 0 ? "text-brand" : "text-mute"
                     }`}
                   >

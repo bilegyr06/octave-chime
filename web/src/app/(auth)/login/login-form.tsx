@@ -49,7 +49,7 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@bank.example"
-          className="mt-1.5 block w-full rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-mute/60 focus:border-brand"
+          className="mt-1.5 block w-full rounded-[3px] border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-mute/60 focus:border-brand"
         />
       </div>
 
@@ -66,12 +66,12 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="mt-1.5 block w-full rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-mute/60 focus:border-brand"
+          className="mt-1.5 block w-full rounded-[3px] border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-mute/60 focus:border-brand"
         />
       </div>
 
       {error ? (
-        <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p className="rounded-[3px] border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -79,7 +79,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-brand px-3 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-brand-strong disabled:opacity-60"
+        className="w-full rounded-[3px] bg-brand px-3 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-brand-strong disabled:opacity-60"
       >
         {submitting ? "Signing in…" : "Sign in"}
       </button>

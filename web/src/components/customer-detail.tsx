@@ -12,7 +12,7 @@ import {
   serviceStatusMap,
   serviceStatusTone,
 } from "@/lib/status";
-import { Badge, Card, EmptyState, ErrorState, Spinner } from "@/components/ui";
+import { Badge, Card, EmptyState, ErrorState, Led, Spinner } from "@/components/ui";
 
 interface CustomerDetail {
   id: string;
@@ -103,13 +103,13 @@ export function CustomerDetail({ id }: { id: string }) {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-soft font-mono text-sm font-medium text-brand">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[3px] bg-brand-soft font-display text-sm font-semibold text-brand">
             {initials(customer.fullName)}
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-ink">{customer.fullName}</h1>
+            <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">{customer.fullName}</h1>
             <p className="mt-0.5 text-sm text-mute">
-              {customer.bankName} · {customer.whatsappPhone ?? customer.email ?? "No contact"}
+              {customer.bankName}, {customer.whatsappPhone ?? customer.email ?? "No contact"}
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <Badge tone={serviceStatusTone(customer.serviceStatus)}>{status.label}</Badge>
@@ -127,7 +127,10 @@ export function CustomerDetail({ id }: { id: string }) {
 
       <Card>
         <div className="border-b border-line px-5 py-4">
-          <h2 className="text-sm font-semibold text-ink">Alert preferences</h2>
+          <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+            <Led tone="brand" />
+            Alert preferences
+          </h2>
         </div>
         <div className="divide-y divide-line">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
@@ -164,7 +167,10 @@ export function CustomerDetail({ id }: { id: string }) {
 
       <Card>
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="text-sm font-semibold text-ink">Linked accounts</h2>
+          <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+            <Led tone="brand" />
+            Linked accounts
+          </h2>
           <span className="text-xs text-mute">
             {customer.linkedAccounts.length} of 5 shown
           </span>
@@ -176,7 +182,7 @@ export function CustomerDetail({ id }: { id: string }) {
           />
         ) : (
           <div className="divide-y divide-line">
-            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium uppercase text-mute sm:grid sm:grid-cols-[1.2fr_1.2fr_1fr_1fr_0.6fr]">
+            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium text-mute sm:grid sm:grid-cols-[1.2fr_1.2fr_1fr_1fr_0.6fr]">
               <span>Account</span>
               <span>Account number</span>
               <span>Type</span>
@@ -191,7 +197,7 @@ export function CustomerDetail({ id }: { id: string }) {
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-ink">{a.accountName}</span>
                   <span className="block text-xs text-mute">
-                    {a.provider} · linked {formatDate(a.linkedAt)}
+                    {a.provider}, linked {formatDate(a.linkedAt)}
                   </span>
                 </span>
                 <span className="font-mono text-sm text-ink">{a.accountNumberMasked}</span>
@@ -210,13 +216,16 @@ export function CustomerDetail({ id }: { id: string }) {
 
       <Card>
         <div className="border-b border-line px-5 py-4">
-          <h2 className="text-sm font-semibold text-ink">Recent transactions</h2>
+          <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+            <Led tone="brand" />
+            Recent transactions
+          </h2>
         </div>
         {customer.recentTransactions.length === 0 ? (
           <EmptyState title="No recent transactions" hint="Transactions appear once the bank sends them." />
         ) : (
           <div className="divide-y divide-line">
-            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium uppercase text-mute sm:grid sm:grid-cols-[1.4fr_2fr_0.9fr_0.9fr]">
+            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium text-mute sm:grid sm:grid-cols-[1.4fr_2fr_0.9fr_0.9fr]">
               <span>Date</span>
               <span>Narration</span>
               <span className="text-right">Amount</span>
@@ -253,7 +262,10 @@ export function CustomerDetail({ id }: { id: string }) {
 
       <Card>
         <div className="border-b border-line px-5 py-4">
-          <h2 className="text-sm font-semibold text-ink">Recent notifications</h2>
+          <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
+            <Led tone="brand" />
+            Recent notifications
+          </h2>
         </div>
         {customer.recentNotifications.length === 0 ? (
           <EmptyState title="No notifications yet" />
@@ -270,7 +282,7 @@ export function CustomerDetail({ id }: { id: string }) {
                   <span className="flex shrink-0 items-center gap-4">
                     <span
                       className={`inline-flex items-center gap-2 text-xs font-medium text-ink ${
-                        note?.tone === "whatsapp" ? "text-[#0b7a3d]" : ""
+                        note?.tone === "whatsapp" ? "text-ok" : ""
                       }`}
                     >
                       <span

@@ -101,7 +101,7 @@ export function TransactionsData() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-ink">Transactions</h1>
+        <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Transactions</h1>
         <p className="mt-1 text-sm text-mute">
           Verified ledger entries that produced WhatsApp alerts for your customers.
         </p>
@@ -126,8 +126,8 @@ export function TransactionsData() {
               </option>
             ))}
           </select>
-          <span className="ml-auto text-sm text-mute">
-            {!loading ? <span className="font-mono tabular">{total}</span> : "…"}
+          <span className="ml-auto text-sm tabular text-mute">
+            {!loading ? total : "…"}
           </span>
         </div>
 
@@ -146,7 +146,7 @@ export function TransactionsData() {
           />
         ) : (
           <div className="divide-y divide-line">
-            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium uppercase text-mute sm:grid sm:grid-cols-[1fr_1.6fr_1.8fr_0.9fr_1fr_0.7fr]">
+            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium text-mute sm:grid sm:grid-cols-[1fr_1.6fr_1.8fr_0.9fr_1fr_0.7fr]">
               <span>Date</span>
               <span>Customer</span>
               <span>Narration</span>
@@ -173,14 +173,14 @@ export function TransactionsData() {
                   <span className="block truncate font-mono text-xs text-mute">{t.reference}</span>
                 </span>
                 <span
-                  className={`text-right font-mono text-sm tabular ${
+                  className={`text-right font-medium tabular ${
                     t.type === "credit" ? "text-brand" : "text-ink"
                   }`}
                 >
                   {t.type === "credit" ? "+" : "−"}
                   {money(t.amount, t.currency)}
                 </span>
-                <span className="text-right font-mono text-sm tabular text-mute">
+                <span className="text-right text-sm tabular text-mute">
                   {money(t.balanceAfter, t.currency)}
                 </span>
                 <Badge tone={SOURCE_TONE[t.source] ?? "mute"}>

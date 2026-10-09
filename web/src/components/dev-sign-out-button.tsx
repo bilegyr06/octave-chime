@@ -24,7 +24,7 @@ export function DevSignOutButton() {
       type="button"
       onClick={signOut}
       disabled={busy}
-      className="inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium text-mute hover:bg-canvas hover:text-ink disabled:opacity-60"
+      className="inline-flex items-center gap-2 rounded-[3px] px-2.5 py-1.5 text-sm font-medium text-mute hover:bg-canvas hover:text-ink disabled:opacity-60"
     >
       <LogOutIcon className="h-4 w-4" />
       Sign out

@@ -10,21 +10,24 @@ import { primaryNav } from "./nav";
 import { SignOutButton } from "./sign-out-button";
 import { TermiiChip } from "./termii-chip";
 import { CloseIcon, MenuIcon } from "./icons";
+import { Led } from "./ui";
 
 function isActive(pathname: string, href: string): boolean {
   return href === "/overview" ? pathname === href : pathname.startsWith(href);
 }
 
-function BrandLockup({ big = false }: { big?: boolean }) {
+function BrandLockup() {
   return (
-    <div className={`flex items-center gap-2.5 ${big ? "" : ""}`}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand font-mono text-sm font-medium text-paper">
-        ⇄
-      </div>
-      <div className="leading-tight">
-        <p className="text-[15px] font-semibold tracking-tight text-ink">Octave Chime</p>
-        <p className="text-[11px] uppercase tracking-[0.14em] text-mute">Bank messenger</p>
-      </div>
+    <div className="flex items-center gap-2.5">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/octave-logo.png"
+        alt="Octave Chime"
+        className="h-8 w-auto object-contain"
+      />
+      <span className="font-display text-[17px] font-semibold tracking-tight text-paper">
+        Octave Chime
+      </span>
     </div>
   );
 }
@@ -32,18 +35,18 @@ function BrandLockup({ big = false }: { big?: boolean }) {
 function TenantBlock({ admin, tenant }: { admin: SessionAdmin; tenant?: BankProfile }) {
   const name = tenant?.name ?? "Octave Chime";
   return (
-    <div className="rounded-lg border border-line bg-paper px-3 py-2.5">
+    <div className="rounded-[3px] border border-paper/10 bg-paper/5 px-3 py-2.5">
       {tenant?.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={tenant.logoUrl} alt="" className="h-8 w-8 rounded-md object-contain" />
+        <img src={tenant.logoUrl} alt="" className="h-8 w-8 rounded-[3px] object-contain" />
       ) : (
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-soft font-mono text-xs font-medium text-brand">
+        <div className="flex h-8 w-8 items-center justify-center rounded-[3px] bg-paper/10 font-mono text-xs font-medium text-paper">
           {initials(name)}
         </div>
       )}
       <div className="mt-2">
-        <p className="text-sm font-semibold text-ink">{name}</p>
-        <p className="text-xs text-mute">
+        <p className="text-sm font-semibold text-paper">{name}</p>
+        <p className="text-xs text-paper/60">
           {admin.role === "platform_admin" ? "Platform workspace" : "Bank workspace"}
         </p>
       </div>
@@ -55,7 +58,7 @@ function SidebarContent({ admin, tenant }: { admin: SessionAdmin; tenant?: BankP
   const pathname = usePathname();
   return (
     <div className="flex h-full flex-col">
-      <div className="px-4 pb-4 pt-5">
+      <div className="px-5 pb-5 pt-6">
         <BrandLockup />
       </div>
 
@@ -63,19 +66,21 @@ function SidebarContent({ admin, tenant }: { admin: SessionAdmin; tenant?: BankP
         <TenantBlock admin={admin} tenant={tenant} />
       </div>
 
-      <nav className="mt-5 flex-1 space-y-0.5 px-3" aria-label="Primary">
+      <nav className="mt-6 flex-1 space-y-0.5 px-3" aria-label="Primary">
         {primaryNav.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium ${
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center gap-3 rounded-[3px] px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? "bg-brand text-paper"
-                  : "text-ink hover:bg-paper"
+                  ? "bg-paper/10 text-paper"
+                  : "text-paper/70 hover:bg-paper/5 hover:text-paper"
               }`}
             >
+              <Led tone={active ? "signal" : "mute"} />
               <item.icon className="h-4 w-4" />
               {item.label}
             </Link>
@@ -83,14 +88,14 @@ function SidebarContent({ admin, tenant }: { admin: SessionAdmin; tenant?: BankP
         })}
       </nav>
 
-      <div className="border-t border-line px-3 py-3">
+      <div className="border-t border-paper/10 px-3 py-3">
         <div className="flex items-center gap-2.5 px-1.5 pb-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-xs font-medium text-paper">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] bg-paper/15 font-display text-xs font-semibold text-paper">
             {initials(admin.name)}
           </div>
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-medium text-ink">{admin.name}</p>
-            <p className="truncate text-xs text-mute">{admin.email}</p>
+            <p className="truncate text-sm font-medium text-paper">{admin.name}</p>
+            <p className="truncate text-xs text-paper/60">{admin.email}</p>
           </div>
         </div>
         <SignOutButton />
@@ -118,7 +123,7 @@ export function DashboardShell({
   return (
     <div className="min-h-dvh">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-line bg-canvas lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-paper/10 bg-brand-strong lg:flex">
         <SidebarContent admin={admin} tenant={tenant} />
       </aside>
 
@@ -128,14 +133,14 @@ export function DashboardShell({
           <button
             type="button"
             aria-label="Close navigation"
-            className="absolute inset-0 bg-ink/40"
+            className="absolute inset-0 bg-ink/50"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-64 bg-canvas shadow-xl">
+          <aside className="absolute inset-y-0 left-0 w-64 bg-brand-strong">
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="absolute right-3 top-4 rounded-md p-1.5 text-mute hover:bg-paper hover:text-ink"
+              className="absolute right-3 top-4 rounded-[3px] p-1.5 text-paper/70 hover:bg-paper/10 hover:text-paper"
               aria-label="Close navigation"
             >
               <CloseIcon className="h-5 w-5" />
@@ -153,12 +158,12 @@ export function DashboardShell({
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="rounded-md p-2 text-mute hover:bg-paper hover:text-ink lg:hidden"
+                className="rounded-[3px] p-2 text-mute hover:bg-paper hover:text-ink lg:hidden"
                 aria-label="Open navigation"
               >
                 <MenuIcon className="h-5 w-5" />
               </button>
-              <p className="font-mono text-xs text-mute">{date}</p>
+              <p className="font-display text-[15px] font-semibold tracking-tight text-ink">{date}</p>
             </div>
             <TermiiChip />
           </div>

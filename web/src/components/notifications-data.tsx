@@ -101,7 +101,7 @@ export function NotificationsData() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-ink">Notifications</h1>
+        <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Notifications</h1>
         <p className="mt-1 text-sm text-mute">
           Delivery log for every WhatsApp alert and daily summary we attempted.
         </p>
@@ -133,8 +133,8 @@ export function NotificationsData() {
               </option>
             ))}
           </select>
-          <span className="ml-auto text-sm text-mute">
-            {!loading ? <span className="font-mono tabular">{total}</span> : "…"}
+          <span className="ml-auto text-sm tabular text-mute">
+            {!loading ? total : "…"}
           </span>
         </div>
 
@@ -153,7 +153,7 @@ export function NotificationsData() {
           />
         ) : (
           <div className="divide-y divide-line">
-            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium uppercase text-mute sm:grid sm:grid-cols-[1fr_0.8fr_1.4fr_1.1fr_2.4fr_0.9fr]">
+            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium text-mute sm:grid sm:grid-cols-[1fr_0.8fr_1.4fr_1.1fr_2.4fr_0.9fr]">
               <span>Time</span>
               <span>Type</span>
               <span>Customer</span>
@@ -187,7 +187,7 @@ export function NotificationsData() {
                   </span>
                   <span
                     className={`inline-flex items-center gap-2 text-xs font-medium text-ink ${
-                      note.tone === "whatsapp" ? "text-[#0b7a3d]" : ""
+                      note.tone === "whatsapp" ? "text-ok" : ""
                     }`}
                   >
                     <span className={`h-2 w-2 rounded-full ${DOT_CLASS[note.tone] ?? "bg-line-strong"}`} />

@@ -43,27 +43,27 @@ function statusPill(key: string, fallback: string): {
   if (key === "granted") {
     return {
       label: consentStatusLabel.granted,
-      className: "bg-emerald-100 text-emerald-800",
+      className: "bg-ok-soft text-ok",
     };
   }
   if (key === "withdrawn") {
     return {
       label: consentStatusLabel.withdrawn,
-      className: "bg-red-100 text-red-700",
+      className: "bg-danger-soft text-danger",
     };
   }
   const service = serviceStatusMap[key];
   if (service) {
     const tones: Record<string, string> = {
-      ok: "bg-emerald-100 text-emerald-800",
-      whatsapp: "bg-emerald-100 text-emerald-800",
-      warn: "bg-amber-100 text-amber-800",
-      danger: "bg-red-100 text-red-700",
-      mute: "bg-zinc-100 text-zinc-600",
+      ok: "bg-ok-soft text-ok",
+      whatsapp: "bg-ok-soft text-ok",
+      warn: "bg-warn-soft text-warn",
+      danger: "bg-danger-soft text-danger",
+      mute: "bg-canvas text-mute",
     };
     return { label: service.label, className: tones[service.tone] };
   }
-  return { label: fallback, className: "bg-zinc-100 text-zinc-600" };
+  return { label: fallback, className: "bg-canvas text-mute" };
 }
 
 export function StatusToken() {
@@ -121,88 +121,88 @@ export function StatusToken() {
   const tail = (accountNumber: string) => accountNumber.replace(/^\*+/, "").slice(-4);
 
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 font-sans">
-      <header className="border-b border-zinc-200 bg-white px-6 py-5">
-        <span className="text-sm font-semibold text-zinc-900">
+    <div className="flex min-h-full flex-col bg-reed font-sans">
+      <header className="border-b border-line bg-paper px-6 py-5">
+        <span className="text-sm font-semibold text-ink">
           Octave&nbsp;Chime
         </span>
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-6 py-12">
-        {phase === "loading" && <p className="text-zinc-500">Loading…</p>}
+        {phase === "loading" && <p className="text-mute">Loading…</p>}
 
         {phase === "ready" && error && (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
-            <h1 className="text-lg font-semibold text-zinc-900">{error.message}</h1>
-            <p className="mt-2 text-sm text-zinc-500">
+          <section className="rounded-[12px] border border-line bg-paper p-6 text-center">
+            <h1 className="text-lg font-semibold text-ink">{error.message}</h1>
+            <p className="mt-2 text-sm text-mute">
               Return to WhatsApp and start again if you need a fresh link.
             </p>
           </section>
         )}
 
         {phase === "ready" && !error && context && (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[12px] border border-line bg-paper p-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-semibold text-zinc-900">Account status</h1>
+              <h1 className="text-lg font-semibold text-ink">Account status</h1>
               {context.bank?.logoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={context.bank.logoUrl}
                   alt=""
-                  className="h-8 w-8 rounded-md object-contain"
+                  className="h-8 w-8 rounded-[3px] object-contain"
                 />
               )}
             </div>
 
             <dl className="mt-5 space-y-2.5 text-sm">
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Bank</dt>
-                <dd className="font-medium text-zinc-900">
+                <dt className="text-mute">Bank</dt>
+                <dd className="font-medium text-ink">
                   {context.bank?.name ?? "—"}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Name</dt>
-                <dd className="font-medium text-zinc-900">
+                <dt className="text-mute">Name</dt>
+                <dd className="font-medium text-ink">
                   {context.customer.fullName}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">WhatsApp</dt>
-                <dd className="font-medium text-zinc-900">
+                <dt className="text-mute">WhatsApp</dt>
+                <dd className="font-medium text-ink">
                   {context.customer.phoneMasked ?? "—"}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Linked account</dt>
-                <dd className="font-medium text-zinc-900">
+                <dt className="text-mute">Linked account</dt>
+                <dd className="font-medium text-ink">
                   {context.account ? (
                     <span>
-                      {context.account.accountName} · ending{" "}
+                      {context.account.accountName}, ending{" "}
                       {tail(context.account.accountNumberMasked)}
                     </span>
                   ) : (
-                    <span className="text-zinc-500">None yet</span>
+                    <span className="text-mute">None yet</span>
                   )}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Enrollment</dt>
+                <dt className="text-mute">Enrollment</dt>
                 <dd>
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                  <span className="rounded-[3px] bg-canvas px-2 py-0.5 text-xs font-medium text-ink">
                     {enrollmentStatusLabel[context.customer.enrollmentStatus] ??
                       context.customer.enrollmentStatus}
                   </span>
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Consent</dt>
+                <dt className="text-mute">Consent</dt>
                 <dd>
                   {(() => {
                     const pill = statusPill(context.customer.consentStatus, "Unknown");
                     return pill ? (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${pill.className}`}
+                        className={`rounded-[3px] px-2 py-0.5 text-xs font-medium ${pill.className}`}
                       >
                         {pill.label}
                       </span>
@@ -211,13 +211,13 @@ export function StatusToken() {
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Service</dt>
+                <dt className="text-mute">Service</dt>
                 <dd>
                   {(() => {
                     const pill = statusPill(context.customer.serviceStatus, "Unknown");
                     return pill ? (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${pill.className}`}
+                        className={`rounded-[3px] px-2 py-0.5 text-xs font-medium ${pill.className}`}
                       >
                         {pill.label}
                       </span>
@@ -227,11 +227,11 @@ export function StatusToken() {
               </div>
             </dl>
 
-            <div className="mt-5 flex flex-col gap-1.5 text-sm text-zinc-600">
+            <div className="mt-5 flex flex-col gap-1.5 text-sm text-mute">
               <p>
                 WhatsApp alerts:{" "}
                 <span
-                  className={context.customer.whatsappAlertsEnabled ? "font-medium text-emerald-700" : "font-medium text-zinc-500"}
+                  className={context.customer.whatsappAlertsEnabled ? "font-medium text-ok" : "font-medium text-mute"}
                 >
                   {context.customer.whatsappAlertsEnabled ? "On" : "Off"}
                 </span>
@@ -239,7 +239,7 @@ export function StatusToken() {
               <p>
                 Daily summaries:{" "}
                 <span
-                  className={context.customer.dailySummaryEnabled ? "font-medium text-emerald-700" : "font-medium text-zinc-500"}
+                  className={context.customer.dailySummaryEnabled ? "font-medium text-ok" : "font-medium text-mute"}
                 >
                   {context.customer.dailySummaryEnabled ? "On" : "Off"}
                 </span>
@@ -248,7 +248,7 @@ export function StatusToken() {
 
             <button
               onClick={() => setPhase("confirmed")}
-              className="mt-6 h-11 w-full rounded-lg bg-zinc-900 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+              className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong"
             >
               Everything looks right
             </button>
@@ -256,9 +256,9 @@ export function StatusToken() {
         )}
 
         {phase === "confirmed" && (
-          <section className="rounded-2xl border border-emerald-200 bg-white p-6 text-center shadow-sm">
-            <h1 className="text-lg font-semibold text-emerald-700">All set</h1>
-            <p className="mt-1 text-sm text-zinc-600">
+          <section className="rounded-[12px] border border-ok/30 bg-paper p-6 text-center">
+            <h1 className="text-lg font-semibold text-ok">All set</h1>
+            <p className="mt-1 text-sm text-mute">
               Your alerts and daily summary preferences are saved exactly as
               shown. You can close this page.
             </p>

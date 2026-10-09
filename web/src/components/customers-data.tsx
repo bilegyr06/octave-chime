@@ -115,9 +115,9 @@ export function CustomersData() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Customers</h1>
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Customers</h1>
           <p className="mt-1 text-sm text-mute">
-            Customers enroll themselves through the WhatsApp bot — no admin creation.
+            Customers enroll themselves through the WhatsApp bot.
           </p>
         </div>
       </div>
@@ -158,7 +158,7 @@ export function CustomersData() {
             ))}
           </select>
           <span className="ml-auto text-sm text-mute">
-            {!loading ? <span className="font-mono tabular">{total}</span> : "…"}
+            {!loading ? <span className="tabular">{total}</span> : "…"}
           </span>
         </div>
 
@@ -177,7 +177,7 @@ export function CustomersData() {
           />
         ) : (
           <div className="divide-y divide-line">
-            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium uppercase text-mute sm:grid sm:grid-cols-[2fr_1fr_1fr_1.2fr_0.75fr]">
+            <div className="hidden items-center gap-4 px-5 py-2 text-xs font-medium text-mute sm:grid sm:grid-cols-[2fr_1fr_1fr_1.2fr_0.75fr]">
               <span>Customer</span>
               <span>Bank</span>
               <span>Status</span>
@@ -205,7 +205,7 @@ export function CustomersData() {
                 <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-mute">
                   <span
                     className={`inline-flex items-center gap-1.5 ${
-                      c.whatsappAlertsEnabled ? "text-[#0b7a3d]" : ""
+                      c.whatsappAlertsEnabled ? "text-ok" : ""
                     }`}
                   >
                     <span
