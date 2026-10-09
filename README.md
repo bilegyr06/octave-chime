@@ -86,8 +86,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
    direct connection strings.
 3. **Render** — *New > Blueprint* against the repo and `api/render.yaml`. After the
    first apply, fill the `sync: false` env vars (secrets + `DATABASE_URL`s + the
-   service URL) in the Render dashboard, then redeploy. Migrations run
-   automatically via the `preDeployCommand`.
+   service URL) in the Render dashboard, then redeploy. Migrations apply during
+   the build (`pnpm db:deploy` runs at the end of the build chain; the free plan
+   doesn't support `preDeployCommand`).
 4. **GitHub Actions** — add the repository secrets `RENDER_API_URL`
    (`https://<render>.onrender.com`) and `RENDER_CRON_SECRET` (same value as the
    API's `CRON_SECRET`). The `daily-summary` workflow fires at 21:00 UTC.
