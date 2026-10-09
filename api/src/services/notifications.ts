@@ -20,7 +20,10 @@ export function decideDelivery(
     import("@prisma/client").Customer,
     "whatsappPhone" | "serviceStatus" | "consentStatus" | "whatsappAlertsEnabled"
   >,
+  opts: { bankAlertsPaused?: boolean } = {},
 ): DeliveryDecision {
+  if (opts.bankAlertsPaused)
+    return { eligible: false, reason: "whatsapp alerts paused by bank" };
   if (!customer.whatsappPhone) return { eligible: false, reason: "no recipient phone on record" };
   if (customer.serviceStatus !== "active")
     return { eligible: false, reason: `service ${customer.serviceStatus}` };

@@ -113,6 +113,7 @@ model Bank {
   logoUrl      String?
   supportEmail String?
   status       BankStatus @default(active)
+  whatsappAlertsPaused Boolean @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

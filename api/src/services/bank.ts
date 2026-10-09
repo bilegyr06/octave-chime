@@ -51,6 +51,9 @@ export async function updateBankProfile(
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.logoUrl !== undefined ? { logoUrl: input.logoUrl } : {}),
       ...(input.supportEmail !== undefined ? { supportEmail: input.supportEmail } : {}),
+      ...(input.whatsappAlertsPaused !== undefined
+        ? { whatsappAlertsPaused: input.whatsappAlertsPaused }
+        : {}),
     },
   });
 
@@ -58,11 +61,12 @@ export async function updateBankProfile(
     bankId: bank.id,
     actorType: actor.role,
     actorId: actor.id,
-    action: "bank.profile_updated",
+    action: input.whatsappAlertsPaused !== undefined ? "bank.alerts_paused_toggled" : "bank.profile_updated",
     metadata: {
       name: input.name,
       logoUrl: input.logoUrl,
       supportEmail: input.supportEmail,
+      whatsappAlertsPaused: input.whatsappAlertsPaused,
     },
   });
 

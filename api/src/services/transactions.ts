@@ -103,7 +103,7 @@ export async function simulateTransaction(
   const customer = await prisma.customer.findFirst({
     where: { id: input.customerId, ...(bankId ? { bankId } : {}) },
     include: {
-      bank: { select: { name: true } },
+      bank: { select: { name: true, whatsappAlertsPaused: true } },
       linkedAccounts: {
         where: { status: "active" },
         orderBy: { linkedAt: "desc" },
@@ -170,12 +170,15 @@ export async function simulateTransaction(
   let providerMessageId: string | null = null;
   let errorMessage: string | null = null;
 
-  const delivery = decideDelivery({
-    whatsappPhone: phone,
-    serviceStatus: customer.serviceStatus,
-    consentStatus: customer.consentStatus,
-    whatsappAlertsEnabled: customer.whatsappAlertsEnabled,
-  });
+  const delivery = decideDelivery(
+    {
+      whatsappPhone: phone,
+      serviceStatus: customer.serviceStatus,
+      consentStatus: customer.consentStatus,
+      whatsappAlertsEnabled: customer.whatsappAlertsEnabled,
+    },
+    { bankAlertsPaused: customer.bank?.whatsappAlertsPaused ?? false },
+  );
 
   if (phone && delivery.eligible) {
     const send = await createTermiiAdapter().send(phone, messageBody);

@@ -8,6 +8,8 @@ import type { NotificationStatus } from "@prisma/client";
 export interface RunDailySummariesInput {
   bankId?: string;
   forDate?: Date;
+  /** Dev-console only. Regenerates today's summary even if it already exists. */
+  force?: boolean;
 }
 
 export interface SummaryRunReport {
@@ -56,7 +58,7 @@ export async function runDailySummaries(
       dailySummaryEnabled: true,
     },
     include: {
-      bank: { select: { name: true } },
+      bank: { select: { name: true, whatsappAlertsPaused: true } },
       linkedAccounts: {
         where: { status: "active" },
         orderBy: { linkedAt: "desc" },
@@ -77,16 +79,32 @@ export async function runDailySummaries(
   };
 
   for (const customer of customers) {
+    if (customer.bank?.whatsappAlertsPaused) {
+      report.skipped += 1;
+      continue;
+    }
+
     const account = customer.linkedAccounts[0];
     if (!account) continue;
 
     const existing = await prisma.dailySummary.findUnique({
       where: { customerId_summaryDate: { customerId: customer.id, summaryDate } },
-      select: { id: true },
+      select: { id: true, notificationId: true },
     });
     if (existing) {
-      report.duplicates += 1;
-      continue;
+      if (!input.force) {
+        report.duplicates += 1;
+        continue;
+      }
+      // Dev demo: regenerate today's summary in place so "Run now" always
+      // produces visible output. The old row and its notification are
+      // replaced by the fresh message below.
+      await prisma.$transaction(async (tx) => {
+        await tx.dailySummary.delete({ where: { id: existing.id } });
+        if (existing.notificationId) {
+          await tx.notification.delete({ where: { id: existing.notificationId } });
+        }
+      });
     }
 
     const grouped = await prisma.transaction.groupBy({

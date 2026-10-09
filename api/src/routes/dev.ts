@@ -123,19 +123,21 @@ devRouter.post("/transactions/simulate", requireDevAuth, async (req, res, next) 
   }
 });
 
-/** Immediate daily-summary run, optionally narrowed to one bank. */
+/** Immediate daily-summary run, optionally narrowed to one bank.
+ *  `force` (dev-only) regenerates today's summaries in place so demo runs
+ *  always produce visible output. The cron and bank-admin "Run now" paths
+ *  keep the idempotent dedup guard. */
 devRouter.post("/summary/run", requireDevAuth, async (req, res, next) => {
   try {
-    const requestedBankId =
-      typeof (req.body as { bankId?: unknown } | undefined)?.bankId === "string"
-        ? (req.body as { bankId: string }).bankId
-        : undefined;
-    const forDate =
-      typeof (req.body as { forDate?: unknown } | undefined)?.forDate === "string"
-        ? new Date((req.body as { forDate: string }).forDate)
-        : undefined;
+    const body = (req.body ?? {}) as { bankId?: unknown; forDate?: unknown; force?: unknown };
+    const requestedBankId = typeof body.bankId === "string" ? body.bankId : undefined;
+    const forDate = typeof body.forDate === "string" ? new Date(body.forDate) : undefined;
     const bankId = await resolveBankScope(req.admin!, requestedBankId);
-    const report = await runDailySummaries({ bankId: bankId ?? undefined, forDate });
+    const report = await runDailySummaries({
+      bankId: bankId ?? undefined,
+      forDate,
+      force: body.force === true,
+    });
     res.json(report);
   } catch (err) {
     next(err);
