@@ -1,0 +1,47 @@
+# Octave Chime — Render Blueprint
+# Applies: Express API (web service) + daily-summary cron
+# Secrets and deploy-time URLs are sync:false — fill them once in the Render
+# dashboard after the first apply (see root README deploy section).
+
+services:
+  - type: web
+    name: octave-chime-api
+    runtime: node
+    rootDir: api
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    preDeployCommand: pnpm db:deploy
+    startCommand: node dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        sync: false
+      - key: API_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: TERMII_MODE
+        value: mock
+      - key: MONO_MODE
+        value: off
+
+  - type: cron
+    name: octave-chime-daily-summary
+    runtime: node
+    schedule: "0 21 * * *"
+    command: curl -m 60 -sS -X POST "$API_URL/cron/daily-summary" -H "Authorization: Bearer $CRON_SECRET"
+    envVars:
+      - key: API_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
