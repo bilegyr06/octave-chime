@@ -54,6 +54,61 @@ enrollRouter.get("/:token", async (req, res, next) => {
   }
 });
 
+/** Secure status surface (build plan §4): token-gated linking/consent snapshot. */
+enrollRouter.get("/:token/status", async (req, res, next) => {
+  try {
+    const verification = await verifyLinkToken(req.params.token);
+    if (!verification.valid) {
+      throw new AppError(
+        "Link not found",
+        verification.reason === "not_found" ? 404 : 410,
+        verification.reason === "not_found" ? "link_not_found" : "link_expired",
+      );
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: verification.payload.customerId },
+      include: {
+        bank: { select: { id: true, name: true, logoUrl: true } },
+        linkedAccounts: {
+          orderBy: { linkedAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            provider: true,
+            accountName: true,
+            accountNumberMasked: true,
+            currency: true,
+            status: true,
+            linkedAt: true,
+          },
+        },
+      },
+    });
+    if (!customer) throw new AppError("Customer not found", 404, "customer_not_found");
+
+    res.json({
+      valid: true,
+      mode: verification.payload.mode,
+      expiresAt: verification.payload.expiresAt,
+      customer: {
+        id: customer.id,
+        fullName: customer.fullName,
+        phoneMasked: customer.whatsappPhone ? maskPhone(customer.whatsappPhone) : null,
+        consentStatus: customer.consentStatus,
+        serviceStatus: customer.serviceStatus,
+        enrollmentStatus: customer.enrollmentStatus,
+        whatsappAlertsEnabled: customer.whatsappAlertsEnabled,
+        dailySummaryEnabled: customer.dailySummaryEnabled,
+      },
+      bank: customer.bank,
+      account: customer.linkedAccounts[0] ?? null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /** Consumption happens when account linking completes (Phase 4). */
 enrollRouter.post("/:token/consume", async (req, res, next) => {
   try {
