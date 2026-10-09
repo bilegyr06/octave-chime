@@ -1,13 +1,21 @@
 import { redirect } from "next/navigation";
 import { DevConsole } from "@/components/dev-console";
 import { DevSignOutButton } from "@/components/dev-sign-out-button";
-import { getDevSession } from "@/lib/session";
+import { ServiceUnavailable } from "@/components/service-unavailable";
+import { safeGetDevSession } from "@/lib/session";
 
 export const metadata = { title: "Dev console" };
 
 export default async function DevPage() {
-  const session = await getDevSession();
-  if (!session) redirect("/dev/login");
+  const session = await safeGetDevSession();
+  if (session.status === "expired") redirect("/dev/login");
+  if (session.status === "unreachable") {
+    return (
+      <div className="min-h-dvh py-20">
+        <ServiceUnavailable href="/dev/login" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-canvas">

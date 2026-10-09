@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { money } from "@/lib/format";
 import { notificationStatusMap, notificationStatusTone } from "@/lib/status";
@@ -65,9 +65,20 @@ interface BankMetrics {
 
 interface TranscriptMsg {
   id: string;
+  kind?: "bot" | "alert" | "summary";
   direction: "inbound" | "outbound";
   text: string;
   createdAt: string;
+  /** Delivery status for alert/summary rows (notification.status). */
+  status?: string;
+  /** Skip/failure reason recorded by the delivery pipeline. */
+  errorMessage?: string | null;
+}
+
+function notificationBadgeLabel(m: TranscriptMsg): string {
+  if (m.status === "sent") return "Delivered";
+  if (m.status === "queued") return "Queued";
+  return `Not delivered · ${m.errorMessage ?? m.status ?? "—"}`;
 }
 
 const URL_RE = /(https?:\/\/\S+)/g;
@@ -80,7 +91,7 @@ function withLinks(text: string): ReactNode {
         href={part}
         target="_blank"
         rel="noreferrer"
-        className="text-brand underline transition-colors hover:text-brand-strong"
+        className="break-all text-brand underline transition-colors hover:text-brand-strong"
       >
         {part}
       </a>
@@ -121,6 +132,7 @@ export function DevConsole() {
   const [waMode, setWaMode] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMsg[]>([]);
   const [waReload, setWaReload] = useState(0);
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +209,23 @@ export function DevConsole() {
     };
   }, [waPhone, waReload]);
 
+  // Pin to the latest message only on user send, phone switch, or when already
+  // at the bottom — never yank the reader away from older history.
+  const forceScrollRef = useRef(false);
+  const lastPhoneRef = useRef(waPhone);
+
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (!el) return;
+    const phoneChanged = lastPhoneRef.current !== waPhone;
+    lastPhoneRef.current = waPhone;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    if (forceScrollRef.current || phoneChanged || nearBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
+    forceScrollRef.current = false;
+  }, [transcript, waPhone]);
+
   const selectedCustomer = customers.find((c) => c.id === sim.customerId) ?? null;
 
   async function runSimulate(e: React.FormEvent) {
@@ -217,6 +246,7 @@ export function DevConsole() {
         }),
       });
       setSimResult(result);
+      setWaReload((n) => n + 1);
     } catch (err) {
       setSimError(err instanceof Error ? err.message : "Simulation failed");
     } finally {
@@ -230,6 +260,7 @@ export function DevConsole() {
     setRunError(null);
     try {
       setReport(await api<SummaryReport>(`${DEV}/summary/run`, { method: "POST" }));
+      setWaReload((n) => n + 1);
     } catch (err) {
       setRunError(err instanceof Error ? err.message : "Summary run failed");
     } finally {
@@ -266,6 +297,7 @@ export function DevConsole() {
         throw new Error(body?.message ?? `Webhook failed (${res.status})`);
       }
       setWaMessage("");
+      forceScrollRef.current = true;
       setWaReload((n) => n + 1);
     } catch (err) {
       setWaError(err instanceof Error ? err.message : "Message could not be sent");
@@ -580,27 +612,49 @@ export function DevConsole() {
 
             {waError ? <p className="text-sm font-medium text-danger">{waError}</p> : null}
 
-            <div className="mt-1 min-h-0 flex-1 space-y-2 overflow-y-auto rounded-md border border-line bg-canvas p-3">
+            <div
+              ref={transcriptRef}
+              className="mt-1 min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-auto rounded-md border border-line bg-canvas p-3"
+            >
               {transcript.length === 0 ? (
                 <p className="text-center text-xs text-mute">
                   No conversation yet for this sender.
                 </p>
               ) : (
-                transcript.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                      m.direction === "inbound"
-                        ? "ml-auto bg-brand-soft text-ink"
-                        : "mr-auto border border-line bg-paper text-ink"
-                    }`}
-                  >
-                    <p className="mb-0.5 text-[10px] uppercase tracking-wide text-mute">
-                      {m.direction === "inbound" ? "You" : "Bot"}
-                    </p>
-                    {withLinks(m.text)}
-                  </div>
-                ))
+                transcript.map((m) => {
+                  const senderLabel =
+                    m.direction === "inbound"
+                      ? "You"
+                      : m.kind === "summary"
+                        ? "Daily summary"
+                        : m.kind === "alert"
+                          ? "Alert"
+                          : "Bot";
+                  const isNotification = m.kind === "alert" || m.kind === "summary";
+                  return (
+                    <div
+                      key={m.id}
+                      className={`max-w-[85%] break-words rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                        m.direction === "inbound"
+                          ? "ml-auto bg-brand-soft text-ink"
+                          : "mr-auto border border-line bg-paper text-ink"
+                      }`}
+                    >
+                      <p className="mb-0.5 text-[10px] uppercase tracking-wide text-mute">
+                        {senderLabel}
+                      </p>
+                      {withLinks(m.text)}
+                      {isNotification ? (
+                        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-mute">
+                          <Badge tone={notificationStatusTone(m.status ?? "")}>
+                            {notificationBadgeLabel(m)}
+                          </Badge>
+                          delivery
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
