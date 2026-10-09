@@ -1,5 +1,7 @@
 # Octave Chime — Render Blueprint
-# Applies: Express API (web service) + daily-summary cron
+# Applies: Express API (web service).
+# The daily summary is scheduled by GitHub Actions
+# (.github/workflows/daily-summary.yml), not by a Render cron.
 # Secrets and deploy-time URLs are sync:false — fill them once in the Render
 # dashboard after the first apply (see root README deploy section).
 
@@ -34,14 +36,3 @@ services:
         value: mock
       - key: MONO_MODE
         value: off
-
-  - type: cron
-    name: octave-chime-daily-summary
-    runtime: node
-    schedule: '0 21 * * *'
-    command: 'curl -m 60 -sS -X POST "$API_URL/cron/daily-summary" -H "Authorization: Bearer $CRON_SECRET"'
-    envVars:
-      - key: API_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false

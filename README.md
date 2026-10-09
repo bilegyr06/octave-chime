@@ -61,7 +61,7 @@ db:deploy` applies committed migrations (never dev migrations in CI/CD).
 | `DATABASE_URL_UNPOOLED` | Neon **direct** connection string (Prisma Migrate) |
 | `SESSION_SECRET` | fresh random string |
 | `JWT_SECRET` | fresh random string |
-| `CRON_SECRET` | fresh random string (cron bearer token, shared with the cron job) |
+| `CRON_SECRET` | fresh random string (bearer token for `/cron/daily-summary`; also stored as the GitHub Actions secret `RENDER_CRON_SECRET`) |
 | `TERMII_MODE` | `mock` for the demo; `live` + `TERMII_API_KEY`/`TERMII_DEVICE_ID` to go live |
 | `MONO_MODE` | `off` (simulated) or `sandbox`/`live` with `MONO_PUBLIC_KEY`/`MONO_SECRET_KEY` |
 | `PORT` | set by Render |
@@ -88,7 +88,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
    first apply, fill the `sync: false` env vars (secrets + `DATABASE_URL`s + the
    service URL) in the Render dashboard, then redeploy. Migrations run
    automatically via the `preDeployCommand`.
-4. **Vercel** — import the repo, root directory `web`, framework Next.js, set the
+4. **GitHub Actions** — add the repository secrets `RENDER_API_URL`
+   (`https://<render>.onrender.com`) and `RENDER_CRON_SECRET` (same value as the
+   API's `CRON_SECRET`). The `daily-summary` workflow fires at 21:00 UTC.
+5. **Vercel** — import the repo, root directory `web`, framework Next.js, set the
    web env vars, deploy `main`. Afterwards set the API's `APP_URL` to the Vercel
    URL in Render and redeploy the API once.
 
@@ -99,9 +102,11 @@ Vercel and redeploy Render (enrollment links and the session cookie depend on
 ## Operations
 
 - Live health: `GET /api/health` → `{ ok: true, db: "ok", termiiMode: "mock" }`.
-- Daily summary: the Render cron job fires at `21:00 UTC`
-  (`POST /cron/daily-summary`, `Authorization: Bearer <CRON_SECRET>`). Free-tier
-  cron runs at most once per day.
+- Daily summary: the GitHub Actions workflow `.github/workflows/daily-summary.yml`
+  fires at `21:00 UTC` (`POST /cron/daily-summary`,
+  `Authorization: Bearer <CRON_SECRET>`). It uses the repository secrets
+  `RENDER_API_URL` and `RENDER_CRON_SECRET`; run it on demand with
+  *Actions > daily-summary > Run workflow*.
 - Termii webhook endpoint: `https://<render>.onrender.com/webhooks/termii`
   (a no-op while `TERMII_MODE=mock`).
 - Seeding is manual and never part of a deploy: `pnpm db:seed` (exactly once).
