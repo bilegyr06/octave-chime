@@ -40,6 +40,12 @@ export function formatUpdated(value: string | Date, now: number): string {
   return `${Math.floor(minutes / 60)}h ago`;
 }
 
+export function formatGap(ms: number): string {
+  const hours = Math.max(0, Math.floor(ms / 3_600_000));
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+}
+
 export function formatTime(hhmm: string): string {
   const [hh, mm] = hhmm.split(":").map(Number);
   const d = new Date();

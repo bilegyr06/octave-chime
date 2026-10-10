@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatCount, formatDate, formatUpdated } from "@/lib/format";
+import { formatCount, formatDate, formatGap, formatUpdated } from "@/lib/format";
 import {
   notificationStatusMap,
   notificationTypeLabel,
@@ -40,6 +40,7 @@ interface DashboardMetrics {
   queuedAlertsToday: number;
   failedAlertsToday: number;
   dailySummariesToday: number;
+  lastAlertReceivedAt: string | null;
   recentEnrollments: RecentEnrollment[];
   recentDeliveryLog: DeliveryRow[];
   generatedAt: string;
@@ -94,12 +95,32 @@ function FailureBand({ failed }: { failed: number }) {
   );
 }
 
-function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
+const STALL_MS = 6 * 60 * 60 * 1000;
+
+function SignalBar({
+  metrics,
+  now,
+}: {
+  metrics: DashboardMetrics;
+  now: number;
+}) {
   const sent = metrics.alertsSentToday;
   const queued = metrics.queuedAlertsToday;
   const failed = metrics.failedAlertsToday;
   const total = sent + queued + failed;
-  const tone = total === 0 ? "mute" : failed > 0 ? "danger" : "whatsapp";
+  const lastReceivedMs = metrics.lastAlertReceivedAt
+    ? new Date(metrics.lastAlertReceivedAt).getTime()
+    : null;
+  const stalled =
+    total === 0 && lastReceivedMs != null && now - lastReceivedMs >= STALL_MS;
+  const tone =
+    total === 0
+      ? stalled
+        ? "warn"
+        : "mute"
+      : failed > 0
+        ? "danger"
+        : "whatsapp";
   const segmentStates: string[] = (() => {
     if (total === 0) return Array(8).fill("bg-line/60");
     return Array.from({ length: 8 }, (_, i) => {
@@ -129,7 +150,13 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
             ) : null}
             {queued > 0 ? <span>{formatCount(queued)} queued</span> : null}
             {failed === 0 && queued === 0 ? (
-              <span>{total === 0 ? "No transaction alerts yet today" : "All sent"}</span>
+              <span className={total === 0 && stalled ? "font-medium text-warn" : ""}>
+                {total === 0
+                  ? stalled && lastReceivedMs != null
+                    ? `No transaction alerts received in ${formatGap(now - lastReceivedMs)}`
+                    : "No transaction alerts yet today"
+                  : "All sent"}
+              </span>
             ) : null}
           </p>
         </div>
@@ -156,7 +183,9 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
         <p className="font-mono text-xs text-mute">
           {total > 0
             ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} sent today`
-            : "No transaction alerts yet today"}
+            : metrics.lastAlertReceivedAt
+              ? `Last alert received ${formatDate(metrics.lastAlertReceivedAt)}`
+              : "No transaction alerts yet today"}
         </p>
         <p className="text-xs text-mute">
           Sent — handed to WhatsApp · Queued — waiting · Failed — rejected · Skipped — held back
@@ -265,7 +294,7 @@ export function OverviewData() {
         <FailureBand failed={metrics.failedAlertsToday} />
       ) : null}
 
-      <SignalBar metrics={metrics} />
+      <SignalBar metrics={metrics} now={now} />
 
       <div className="grid gap-4 lg:grid-cols-5">
         <Card className="overflow-hidden lg:col-span-3">

@@ -9,6 +9,7 @@ export interface DashboardMetrics {
   queuedAlertsToday: number;
   failedAlertsToday: number;
   dailySummariesToday: number;
+  lastAlertReceivedAt: string | null;
   recentEnrollments: {
     id: string;
     fullName: string;
