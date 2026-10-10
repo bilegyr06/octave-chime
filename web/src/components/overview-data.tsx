@@ -66,13 +66,22 @@ function PanelHeader({ title, href, led = "brand" }: { title: string; href?: str
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({
+  label,
+  value,
+  period,
+}: {
+  label: string;
+  value: number;
+  period?: string;
+}) {
   return (
     <div>
       <p className="text-xs text-mute">{label}</p>
       <p className="mt-0.5 font-display text-xl font-semibold tracking-tight tabular text-ink">
         {formatCount(value)}
       </p>
+      {period ? <p className="mt-0.5 text-[11px] text-mute">{period}</p> : null}
     </div>
   );
 }
@@ -161,10 +170,14 @@ function SignalBar({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-4">
-          <MiniStat label="Enrolled customers" value={metrics.enrolledCustomers} />
-          <MiniStat label="Linked accounts" value={metrics.linkedAccounts} />
-          <MiniStat label="WhatsApp enabled" value={metrics.whatsappEnabledCustomers} />
-          <MiniStat label="Daily summaries" value={metrics.dailySummariesToday} />
+          <MiniStat label="Enrolled customers" value={metrics.enrolledCustomers} period="all time" />
+          <MiniStat label="Linked accounts" value={metrics.linkedAccounts} period="all time" />
+          <MiniStat
+            label="WhatsApp enabled"
+            value={metrics.whatsappEnabledCustomers}
+            period="all time"
+          />
+          <MiniStat label="Daily summaries" value={metrics.dailySummariesToday} period="today" />
         </div>
       </div>
       <div aria-hidden className="mt-6 flex h-7 overflow-hidden rounded-[3px] bg-line/60">
