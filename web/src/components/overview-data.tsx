@@ -41,6 +41,7 @@ interface DashboardMetrics {
   failedAlertsToday: number;
   dailySummariesToday: number;
   lastAlertReceivedAt: string | null;
+  firstActivityAt: string | null;
   recentEnrollments: RecentEnrollment[];
   recentDeliveryLog: DeliveryRow[];
   generatedAt: string;
@@ -120,8 +121,12 @@ function SignalBar({
   const lastReceivedMs = metrics.lastAlertReceivedAt
     ? new Date(metrics.lastAlertReceivedAt).getTime()
     : null;
+  const firstActivityMs = metrics.firstActivityAt
+    ? new Date(metrics.firstActivityAt).getTime()
+    : null;
+  const quietSinceMs = lastReceivedMs ?? firstActivityMs;
   const stalled =
-    total === 0 && lastReceivedMs != null && now - lastReceivedMs >= STALL_MS;
+    total === 0 && quietSinceMs != null && now - quietSinceMs >= STALL_MS;
   const tone =
     total === 0
       ? stalled
@@ -161,8 +166,8 @@ function SignalBar({
             {failed === 0 && queued === 0 ? (
               <span className={total === 0 && stalled ? "font-medium text-warn" : ""}>
                 {total === 0
-                  ? stalled && lastReceivedMs != null
-                    ? `No transaction alerts received in ${formatGap(now - lastReceivedMs)}`
+                  ? stalled && quietSinceMs != null
+                    ? `No transaction alerts received in ${formatGap(now - quietSinceMs)}`
                     : "No transaction alerts yet today"
                   : "All sent"}
               </span>
@@ -210,7 +215,9 @@ function SignalBar({
             ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} transaction alerts sent today`
             : metrics.lastAlertReceivedAt
               ? `Last alert received ${formatDate(metrics.lastAlertReceivedAt)}`
-              : "No transaction alerts yet today"}
+              : metrics.firstActivityAt
+                ? `No transaction alerts since ${formatDate(metrics.firstActivityAt)}`
+                : "No transaction alerts yet today"}
         </p>
         <p className="text-xs text-mute">
           Sent — handed to WhatsApp · Queued — waiting · Failed — rejected
