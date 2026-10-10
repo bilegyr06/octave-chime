@@ -134,11 +134,21 @@ function SignalBar({
           </p>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-mute">
             {failed > 0 ? (
-              <span className="font-medium text-danger">
+              <Link
+                href="/notifications?status=failed"
+                className="font-medium text-danger hover:underline"
+              >
                 {formatCount(failed)} failed to send
-              </span>
+              </Link>
             ) : null}
-            {queued > 0 ? <span>{formatCount(queued)} queued</span> : null}
+            {queued > 0 ? (
+              <Link
+                href="/notifications?status=queued"
+                className="font-medium text-ink hover:underline"
+              >
+                {formatCount(queued)} queued
+              </Link>
+            ) : null}
             {failed === 0 && queued === 0 ? (
               <span className={total === 0 && stalled ? "font-medium text-warn" : ""}>
                 {total === 0
@@ -316,29 +326,26 @@ export function OverviewData() {
                   tone: "mute" as const,
                 };
 return (
-                  <li key={n.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                    <div className="min-w-0">
-                      <Link
-                        href={`/customers/${n.customerId}`}
-                        title={n.customerName}
-                        className="block truncate text-sm font-medium text-ink hover:text-brand"
-                      >
-                        {n.customerName}
-                      </Link>
-                      <p className="truncate font-mono text-xs text-mute">{n.recipient}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <Badge tone="brand">{notificationTypeLabel[n.type] ?? n.type}</Badge>
-                      <Link
-                        href={`/notifications?status=${n.status}`}
-                        aria-label={`View ${status.label} notifications`}
-                      >
+                  <li key={n.id} className="group transition-colors hover:bg-brand-soft/40">
+                    <Link
+                      href={`/customers/${n.customerId}`}
+                      title={n.customerName}
+                      className="flex items-center justify-between gap-3 px-5 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink group-hover:text-brand">
+                          {n.customerName}
+                        </p>
+                        <p className="truncate font-mono text-xs text-mute">{n.recipient}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <Badge tone="brand">{notificationTypeLabel[n.type] ?? n.type}</Badge>
                         <StatusDot tone={status.tone} label={status.label} />
-                      </Link>
-                      <span className="w-24 text-right font-mono text-xs text-mute">
-                        {formatDate(n.createdAt)}
-                      </span>
-                    </div>
+                        <span className="w-24 text-right font-mono text-xs text-mute">
+                          {formatDate(n.createdAt)}
+                        </span>
+                      </div>
+                    </Link>
                   </li>
                 );
               })}
