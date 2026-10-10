@@ -89,6 +89,17 @@ function MiniStat({
 
 const STALL_MS = 6 * 60 * 60 * 1000;
 
+function liveRegion(m: DashboardMetrics): string {
+  const sent = m.alertsSentToday;
+  const queued = m.queuedAlertsToday;
+  const failed = m.failedAlertsToday;
+  if (sent === 0 && queued === 0 && failed === 0) return "No transaction alerts yet today.";
+  const bits = ["Metrics updated", `${formatCount(sent)} sent today`];
+  if (queued > 0) bits.push(`${formatCount(queued)} queued`);
+  if (failed > 0) bits.push(`${formatCount(failed)} failed to send`);
+  return `${bits.join(" · ")}.`;
+}
+
 function SignalBar({
   metrics,
   now,
@@ -121,10 +132,10 @@ function SignalBar({
     <Card className="px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
         <div>
-          <p className="flex items-center gap-2 text-sm text-mute">
+          <h2 className="flex items-center gap-2 text-sm text-mute">
             <Led tone={tone} />
             Alerts sent today
-          </p>
+          </h2>
           <p className="mt-1 font-display text-[44px] font-semibold leading-none tracking-tight tabular text-ink">
             {formatCount(sent)}
           </p>
@@ -193,13 +204,17 @@ function SignalBar({
         </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5">
         <p className="font-mono text-xs text-mute">
-          {total > 0
-            ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} transaction alerts sent today`
-            : metrics.lastAlertReceivedAt
-              ? `Last alert received ${formatDate(metrics.lastAlertReceivedAt)}`
-              : metrics.firstActivityAt
-                ? `No transaction alerts since ${formatDate(metrics.firstActivityAt)}`
-                : "No transaction alerts yet today"}
+          {total > 0 ? (
+            <>
+              {Math.round((sent / total) * 100)}% of {formatCount(total)} transaction alerts sent
+              today
+              <span className="sr-only">{` Sent ${formatCount(sent)}, queued ${formatCount(queued)}, failed ${formatCount(failed)}.`}</span>
+            </>
+          ) : metrics.lastAlertReceivedAt
+            ? `Last alert received ${formatDate(metrics.lastAlertReceivedAt)}`
+            : metrics.firstActivityAt
+              ? `No transaction alerts since ${formatDate(metrics.firstActivityAt)}`
+              : "No transaction alerts yet today"}
         </p>
         <p className="text-xs text-mute">
           Sent — handed to WhatsApp · Queued — waiting · Failed — rejected
@@ -287,11 +302,7 @@ export function OverviewData() {
   return (
     <div className="space-y-6">
       <p className="sr-only" role="status" aria-live="polite">
-        {error
-          ? "Metrics failed to load."
-          : metrics
-            ? `Metrics updated · ${formatCount(metrics.alertsSentToday)} sent today.`
-            : "Loading metrics."}
+        {error ? "Metrics failed to load." : metrics ? liveRegion(metrics) : "Loading metrics."}
       </p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
