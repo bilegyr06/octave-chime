@@ -129,7 +129,7 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
             ) : null}
             {queued > 0 ? <span>{formatCount(queued)} queued</span> : null}
             {failed === 0 && queued === 0 ? (
-              <span>{total === 0 ? "Nothing sent yet today" : "All sent"}</span>
+              <span>{total === 0 ? "No transaction alerts yet today" : "All sent"}</span>
             ) : null}
           </p>
         </div>
@@ -156,7 +156,7 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
         <p className="font-mono text-xs text-mute">
           {total > 0
             ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} sent today`
-            : "No alerts yet today"}
+            : "No transaction alerts yet today"}
         </p>
         <p className="text-xs text-mute">
           Sent — handed to WhatsApp · Queued — waiting · Failed — rejected · Skipped — held back
