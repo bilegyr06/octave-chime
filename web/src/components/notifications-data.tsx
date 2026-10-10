@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
@@ -47,11 +48,16 @@ const DOT_CLASS: Record<string, string> = {
 };
 
 export function NotificationsData() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const type = searchParams.get("type") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [type, setType] = useState("");
-  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -79,17 +85,28 @@ export function NotificationsData() {
     };
   }, [page, type, status, reloadKey]);
 
-  const changeFilter = (setter: (v: string) => void) => (value: string) => {
-    setPage(1);
-    setLoading(true);
+  const navigate = (patch: Record<string, string>): boolean => {
+    const params = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    const query = params.toString();
+    const next = query ? `${pathname}?${query}` : pathname;
+    const current = searchParams.toString();
+    if (current === query) return false;
+    router.push(next, { scroll: false });
+    return true;
+  };
+
+  const changeFilter = (key: "type" | "status") => (value: string) => {
     setError(null);
-    setter(value);
+    setLoading(navigate({ [key]: value, page: "" }));
   };
 
   const gotoPage = (p: number) => {
-    setLoading(true);
     setError(null);
-    setPage(p);
+    setLoading(navigate({ page: p > 1 ? String(p) : "" }));
   };
 
   const retry = () => {
@@ -112,7 +129,7 @@ export function NotificationsData() {
           <select
             className={`${inputClass} w-auto`}
             value={type}
-            onChange={(e) => changeFilter(setType)(e.target.value)}
+            onChange={(e) => changeFilter("type")(e.target.value)}
           >
             <option value="">All types</option>
             {TYPE_FILTERS.filter(Boolean).map((t) => (
@@ -124,7 +141,7 @@ export function NotificationsData() {
           <select
             className={`${inputClass} w-auto`}
             value={status}
-            onChange={(e) => changeFilter(setStatus)(e.target.value)}
+            onChange={(e) => changeFilter("status")(e.target.value)}
           >
             <option value="">All status</option>
             {STATUS_FILTERS.filter(Boolean).map((s) => (
@@ -166,30 +183,46 @@ export function NotificationsData() {
               return (
                 <div
                   key={n.id}
-                  className="grid items-center gap-4 px-5 py-3 sm:grid-cols-[1fr_0.8fr_1.4fr_1.1fr_2.4fr_0.9fr]"
+                  className="grid items-center gap-1 px-5 py-3 sm:gap-4 sm:grid-cols-[1fr_0.8fr_1.4fr_1.1fr_2.4fr_0.9fr]"
                 >
-                  <span className="text-xs text-mute">{formatDate(n.createdAt)}</span>
-                  <Badge tone={n.type === "daily_summary" ? "mute" : "brand"}>
-                    {notificationTypeLabel[n.type] ?? n.type}
-                  </Badge>
-                  <Link
-                    href={`/customers/${n.customerId}`}
-                    className="truncate text-sm font-medium text-ink hover:text-brand"
-                  >
-                    {n.customerName}
-                  </Link>
-                  <span className="truncate font-mono text-xs text-ink">{n.recipient}</span>
-                  <span className="min-w-0" title={n.errorMessage ?? undefined}>
+                  <span className="text-xs text-mute">
+                    <span className="mr-2 text-xs font-medium text-mute sm:hidden">Time</span>
+                    {formatDate(n.createdAt)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-mute sm:hidden">Type</span>
+                    <Badge tone={n.type === "daily_summary" ? "mute" : "brand"}>
+                      {notificationTypeLabel[n.type] ?? n.type}
+                    </Badge>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="mr-2 text-xs font-medium text-mute sm:hidden">Customer</span>
+                    <Link
+                      href={`/customers/${n.customerId}`}
+                      className="truncate text-sm font-medium text-ink hover:text-brand"
+                    >
+                      {n.customerName}
+                    </Link>
+                  </div>
+                  <div className="min-w-0 truncate font-mono text-xs text-ink">
+                    <span className="mr-2 font-sans text-xs font-medium text-mute sm:hidden">
+                      Recipient
+                    </span>
+                    {n.recipient}
+                  </div>
+                  <div className="min-w-0" title={n.errorMessage ?? undefined}>
+                    <span className="mr-2 text-xs font-medium text-mute sm:hidden">Message</span>
                     <span className="block truncate text-sm text-ink">{n.messageBody}</span>
                     {n.errorMessage ? (
                       <span className="block truncate text-xs text-danger">{n.errorMessage}</span>
                     ) : null}
-                  </span>
+                  </div>
                   <span
                     className={`inline-flex items-center gap-2 text-xs font-medium text-ink ${
                       note.tone === "whatsapp" ? "text-ok" : ""
                     }`}
                   >
+                    <span className="text-xs font-medium text-mute sm:hidden">Status</span>
                     <span className={`h-2 w-2 rounded-full ${DOT_CLASS[note.tone] ?? "bg-line-strong"}`} />
                     {note.label}
                   </span>

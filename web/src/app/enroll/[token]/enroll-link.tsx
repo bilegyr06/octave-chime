@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Connect from "@mono.co/connect.js";
+import { CheckIcon } from "@/components/icons";
+import { Spinner } from "@/components/ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const MONO_PUBLIC_KEY = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY ?? "";
@@ -201,23 +203,27 @@ export function EnrollLink() {
   const last4 = (accountNumber: string) => accountNumber.slice(-4);
 
   return (
-    <div className="flex min-h-full flex-col bg-reed font-sans">
-      <header className="border-b border-line bg-paper px-6 py-5">
-        <span className="text-sm font-semibold text-ink">
-          Octave&nbsp;Chime
-        </span>
+    <div className="flex min-h-dvh flex-col bg-reed font-sans">
+      <header className="border-b border-line bg-paper px-6 py-4">
+        <div className="mx-auto flex w-full max-w-md items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/octave-logo.png" alt="Octave Chime" className="h-7 w-auto object-contain" />
+          <span className="font-display text-[15px] font-semibold tracking-tight text-ink">
+            Octave Chime
+          </span>
+        </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-6 py-12">
-        {phase === "loading" && <p className="text-mute">Loading…</p>}
+        {phase === "loading" && <Spinner label="Loading your link" />}
 
         {phase === "ready" &&
           context &&
           !loadError &&
           context.mode === "reconsent" &&
           !consentConfirmed && (
-            <section className="rounded-[12px] border border-line bg-paper p-6 ">
-              <h1 className="text-lg font-semibold text-ink">
+            <section className="rounded-[3px] border border-line bg-paper p-6 ">
+              <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
                 Welcome back
               </h1>
               <p className="mt-1 text-sm text-mute">
@@ -244,7 +250,7 @@ export function EnrollLink() {
               <button
                 onClick={() => void confirmConsent()}
                 disabled={consenting}
-                className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {consenting ? "Confirming…" : "Confirm consent"}
               </button>
@@ -255,17 +261,15 @@ export function EnrollLink() {
           context &&
           !loadError &&
           !(context.mode === "reconsent" && !consentConfirmed) && (
-            <section className="rounded-[12px] border border-line bg-paper p-6 ">
-              <h1 className="text-lg font-semibold text-ink">
-                {context.mode === "relink"
-                  ? "Re-link your account"
-                  : "Link your account"}
-              </h1>
+            <section className="rounded-[3px] border border-line bg-paper p-6 ">
+            <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
+              {context.mode === "relink" ? "Re-link your account" : "Link your account"}
+            </h1>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-mute">Bank</dt>
                 <dd className="font-medium text-ink">
-                  {context.bank?.name ?? "—"}
+                  {context.bank?.name ?? "Not set"}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
@@ -286,7 +290,7 @@ export function EnrollLink() {
 
             {context.mono.mode === "off" ? (
               linked ? (
-                <div className="mt-6 rounded-[10px] border border-line bg-reed p-4">
+                <div className="mt-6 rounded-[3px] border border-line bg-canvas p-4">
                   <p className="text-xs text-mute">Demo account</p>
                   <p className="mt-1 font-medium text-ink">
                     {linked.institutionName}, {linked.accountName}
@@ -317,7 +321,7 @@ export function EnrollLink() {
             <button
               onClick={handleLinkClick}
               disabled={linking}
-              className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
             >
               {linking
                 ? "Linking…"
@@ -329,8 +333,8 @@ export function EnrollLink() {
         )}
 
         {phase === "ready" && loadError && (
-          <section className="rounded-[12px] border border-line bg-paper p-6 text-center ">
-            <h1 className="text-lg font-semibold text-ink">
+          <section className="rounded-[3px] border border-line bg-paper p-6 text-center ">
+            <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
               {loadError.message}
             </h1>
             <p className="mt-2 text-sm text-mute">
@@ -340,8 +344,11 @@ export function EnrollLink() {
         )}
 
         {phase === "success" && consentDone && (
-          <section className="rounded-[12px] border border-ok/30 bg-paper p-6 ">
-            <h1 className="text-lg font-semibold text-ok">
+          <section className="rounded-[3px] border border-ok/30 bg-paper p-6 ">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[3px] bg-ok-soft text-ok">
+              <CheckIcon className="h-5 w-5" />
+            </div>
+            <h1 className="mt-3 font-display text-xl font-semibold tracking-tight text-ok">
               Consent confirmed
             </h1>
             <p className="mt-1 text-sm text-mute">
@@ -356,8 +363,11 @@ export function EnrollLink() {
         )}
 
         {phase === "success" && result && (
-          <section className="rounded-[12px] border border-ok/30 bg-paper p-6 ">
-            <h1 className="text-lg font-semibold text-ok">
+          <section className="rounded-[3px] border border-ok/30 bg-paper p-6 ">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[3px] bg-ok-soft text-ok">
+              <CheckIcon className="h-5 w-5" />
+            </div>
+            <h1 className="mt-3 font-display text-xl font-semibold tracking-tight text-ok">
               Account linked
             </h1>
             <p className="mt-1 text-sm text-mute">

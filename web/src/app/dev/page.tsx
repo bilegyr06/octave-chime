@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DevConsole } from "@/components/dev-console";
 import { DevSignOutButton } from "@/components/dev-sign-out-button";
+import { TerminalIcon } from "@/components/icons";
 import { ServiceUnavailable } from "@/components/service-unavailable";
 import { safeGetDevSession } from "@/lib/session";
 
@@ -22,8 +23,8 @@ export default async function DevPage() {
       <header className="sticky top-0 z-10 border-b border-line bg-paper">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[3px] bg-brand-strong font-semibold text-lg text-paper">
-              ⌘
+            <div className="flex h-8 w-8 items-center justify-center rounded-[3px] bg-brand-strong text-paper">
+              <TerminalIcon className="h-[18px] w-[18px]" />
             </div>
             <div className="leading-tight">
               <p className="font-display text-sm font-semibold tracking-tight text-ink">

@@ -92,7 +92,7 @@ export async function safeGetSession(): Promise<SessionLookup<SessionAdmin>> {
   return lookupSession<SessionAdmin>("/api/auth/me", SESSION_COOKIE);
 }
 
-/** Dev-console session guard — reads `oc_dev_session`, distinct from admins. */
+/** Dev-console session guard - reads `oc_dev_session`, distinct from admins. */
 export async function getDevSession(): Promise<SessionAdmin | null> {
   const result = await lookupSession<SessionAdmin>("/api/dev/auth/me", DEV_SESSION_COOKIE);
   return result.admin;

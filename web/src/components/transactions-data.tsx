@@ -173,14 +173,14 @@ export function TransactionsData() {
                   <span className="block truncate font-mono text-xs text-mute">{t.reference}</span>
                 </span>
                 <span
-                  className={`text-right font-medium tabular ${
+                  className={`text-right font-mono text-sm tabular ${
                     t.type === "credit" ? "text-brand" : "text-ink"
                   }`}
                 >
                   {t.type === "credit" ? "+" : "−"}
                   {money(t.amount, t.currency)}
                 </span>
-                <span className="text-right text-sm tabular text-mute">
+                <span className="text-right font-mono text-sm tabular text-mute">
                   {money(t.balanceAfter, t.currency)}
                 </span>
                 <Badge tone={SOURCE_TONE[t.source] ?? "mute"}>

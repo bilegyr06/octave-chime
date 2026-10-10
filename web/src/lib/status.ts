@@ -16,7 +16,7 @@ export const notificationStatusMap: Record<
   { label: string; tone: NoticeTone }
 > = {
   queued: { label: "Queued", tone: "mute" },
-  sent: { label: "Delivered", tone: "whatsapp" },
+  sent: { label: "Sent", tone: "whatsapp" },
   failed: { label: "Failed", tone: "danger" },
   skipped: { label: "Skipped", tone: "warn" },
 };

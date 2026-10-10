@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-10T00:00:00Z",
+  "title": "Design System: Octave Chime",
+  "extensions": {
+    "colorMeta": {
+      "console-green": {
+        "role": "primary",
+        "displayName": "Deep Console Green",
+        "canonical": "#0a5345",
+        "tonalRamp": ["oklch(15% 0.06 168)", "oklch(25% 0.06 168)", "oklch(35% 0.06 168)", "oklch(45% 0.06 168)", "oklch(55% 0.06 168)", "oklch(65% 0.06 168)", "oklch(78% 0.05 168)", "oklch(90% 0.04 168)"]
+      },
+      "console-green-deep": {
+        "role": "primary",
+        "displayName": "Console Green Deep",
+        "canonical": "#073c33",
+        "tonalRamp": ["oklch(14% 0.045 168)", "oklch(24% 0.05 168)", "oklch(34% 0.055 168)", "oklch(45% 0.055 168)", "oklch(56% 0.055 168)", "oklch(66% 0.05 168)", "oklch(78% 0.045 168)", "oklch(90% 0.035 168)"]
+      },
+      "console-green-soft": {
+        "role": "primary",
+        "displayName": "Console Green Soft",
+        "canonical": "#dcebe4",
+        "tonalRamp": ["oklch(15% 0.02 160)", "oklch(25% 0.025 160)", "oklch(35% 0.03 160)", "oklch(45% 0.03 160)", "oklch(55% 0.03 160)", "oklch(65% 0.03 160)", "oklch(78% 0.03 160)", "oklch(90% 0.03 160)"]
+      },
+      "amber-signal": {
+        "role": "secondary",
+        "displayName": "Amber Signal",
+        "canonical": "#c7851b",
+        "tonalRamp": ["oklch(15% 0.05 70)", "oklch(25% 0.07 70)", "oklch(35% 0.09 70)", "oklch(45% 0.11 70)", "oklch(55% 0.12 70)", "oklch(65% 0.12 70)", "oklch(78% 0.11 70)", "oklch(90% 0.07 70)"]
+      },
+      "amber-signal-soft": {
+        "role": "secondary",
+        "displayName": "Amber Signal Soft",
+        "canonical": "#f6ead2",
+        "tonalRamp": ["oklch(15% 0.03 80)", "oklch(25% 0.035 80)", "oklch(35% 0.04 80)", "oklch(45% 0.045 80)", "oklch(55% 0.05 80)", "oklch(65% 0.05 80)", "oklch(78% 0.05 80)", "oklch(90% 0.05 80)"]
+      },
+      "whatsapp-green": {
+        "role": "tertiary",
+        "displayName": "WhatsApp Green",
+        "canonical": "#1da851",
+        "tonalRamp": ["oklch(15% 0.06 150)", "oklch(25% 0.09 150)", "oklch(35% 0.12 150)", "oklch(45% 0.14 150)", "oklch(55% 0.17 150)", "oklch(65% 0.17 150)", "oklch(78% 0.15 150)", "oklch(90% 0.09 150)"]
+      },
+      "console-mist": {
+        "role": "neutral",
+        "displayName": "Cool Console Mist",
+        "canonical": "#e9ede8",
+        "tonalRamp": ["oklch(15% 0.008 150)", "oklch(25% 0.008 150)", "oklch(35% 0.008 150)", "oklch(45% 0.008 150)", "oklch(55% 0.008 150)", "oklch(65% 0.008 150)", "oklch(78% 0.008 150)", "oklch(90% 0.008 150)"]
+      },
+      "reed": {
+        "role": "neutral",
+        "displayName": "Reed",
+        "canonical": "#e2e8e1",
+        "tonalRamp": ["oklch(15% 0.01 150)", "oklch(25% 0.01 150)", "oklch(35% 0.01 150)", "oklch(45% 0.01 150)", "oklch(55% 0.01 150)", "oklch(65% 0.01 150)", "oklch(78% 0.01 150)", "oklch(90% 0.01 150)"]
+      },
+      "instrument-paper": {
+        "role": "neutral",
+        "displayName": "Instrument Paper",
+        "canonical": "#fafbf9",
+        "tonalRamp": ["oklch(15% 0.003 150)", "oklch(25% 0.003 150)", "oklch(35% 0.003 150)", "oklch(45% 0.003 150)", "oklch(55% 0.003 150)", "oklch(65% 0.003 150)", "oklch(78% 0.003 150)", "oklch(90% 0.003 150)"]
+      },
+      "ink-green-black": {
+        "role": "neutral",
+        "displayName": "Ink Green-Black",
+        "canonical": "#11201b",
+        "tonalRamp": ["oklch(15% 0.02 165)", "oklch(25% 0.02 165)", "oklch(35% 0.02 165)", "oklch(45% 0.02 165)", "oklch(55% 0.02 165)", "oklch(65% 0.02 165)", "oklch(78% 0.02 165)", "oklch(90% 0.02 165)"]
+      },
+      "mute-sage": {
+        "role": "neutral",
+        "displayName": "Mute Sage",
+        "canonical": "#4f625a",
+        "tonalRamp": ["oklch(15% 0.015 160)", "oklch(25% 0.018 160)", "oklch(35% 0.02 160)", "oklch(45% 0.02 160)", "oklch(55% 0.02 160)", "oklch(65% 0.02 160)", "oklch(78% 0.02 160)", "oklch(90% 0.02 160)"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#d5ddd4",
+        "tonalRamp": ["oklch(15% 0.01 150)", "oklch(25% 0.011 150)", "oklch(35% 0.012 150)", "oklch(45% 0.012 150)", "oklch(55% 0.012 150)", "oklch(65% 0.012 150)", "oklch(78% 0.012 150)", "oklch(90% 0.012 150)"]
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "#b7c4ba",
+        "tonalRamp": ["oklch(15% 0.014 150)", "oklch(25% 0.016 150)", "oklch(35% 0.017 150)", "oklch(45% 0.018 150)", "oklch(55% 0.018 150)", "oklch(65% 0.018 150)", "oklch(78% 0.018 150)", "oklch(90% 0.018 150)"]
+      },
+      "nominal-green": {
+        "role": "neutral",
+        "displayName": "Nominal Green",
+        "canonical": "#2e7d45",
+        "tonalRamp": ["oklch(15% 0.04 150)", "oklch(25% 0.06 150)", "oklch(35% 0.08 150)", "oklch(45% 0.10 150)", "oklch(55% 0.12 150)", "oklch(65% 0.12 150)", "oklch(78% 0.10 150)", "oklch(90% 0.06 150)"]
+      },
+      "nominal-green-soft": {
+        "role": "neutral",
+        "displayName": "Nominal Green Soft",
+        "canonical": "#e1efe2",
+        "tonalRamp": ["oklch(15% 0.02 150)", "oklch(25% 0.022 150)", "oklch(35% 0.025 150)", "oklch(45% 0.028 150)", "oklch(55% 0.03 150)", "oklch(65% 0.03 150)", "oklch(78% 0.03 150)", "oklch(90% 0.03 150)"]
+      },
+      "alert-red": {
+        "role": "neutral",
+        "displayName": "Alert Red",
+        "canonical": "#a03a2e",
+        "tonalRamp": ["oklch(15% 0.05 32)", "oklch(25% 0.08 32)", "oklch(35% 0.10 32)", "oklch(45% 0.12 32)", "oklch(55% 0.13 32)", "oklch(65% 0.13 32)", "oklch(78% 0.11 32)", "oklch(90% 0.06 32)"]
+      },
+      "alert-red-soft": {
+        "role": "neutral",
+        "displayName": "Alert Red Soft",
+        "canonical": "#f7e7e3",
+        "tonalRamp": ["oklch(15% 0.025 35)", "oklch(25% 0.028 35)", "oklch(35% 0.03 35)", "oklch(45% 0.032 35)", "oklch(55% 0.035 35)", "oklch(65% 0.035 35)", "oklch(78% 0.035 35)", "oklch(90% 0.035 35)"]
+      },
+      "caution-amber": {
+        "role": "neutral",
+        "displayName": "Caution Amber",
+        "canonical": "#9a6b0f",
+        "tonalRamp": ["oklch(15% 0.04 72)", "oklch(25% 0.06 72)", "oklch(35% 0.08 72)", "oklch(45% 0.09 72)", "oklch(55% 0.10 72)", "oklch(65% 0.10 72)", "oklch(78% 0.09 72)", "oklch(90% 0.06 72)"]
+      },
+      "caution-amber-soft": {
+        "role": "neutral",
+        "displayName": "Caution Amber Soft",
+        "canonical": "#f3e8ce",
+        "tonalRamp": ["oklch(15% 0.025 82)", "oklch(25% 0.03 82)", "oklch(35% 0.035 82)", "oklch(45% 0.04 82)", "oklch(55% 0.045 82)", "oklch(65% 0.045 82)", "oklch(78% 0.045 82)", "oklch(90% 0.045 82)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles and large figures; the confident voice." },
+      "metric": { "displayName": "Metric", "purpose": "The single hero number at the top of a view." },
+      "title": { "displayName": "Title", "purpose": "Panel headers and in-card figures." },
+      "body": { "displayName": "Body", "purpose": "Prose, table cells, and controls." },
+      "label": { "displayName": "Label", "purpose": "Badges, table headers, metadata, helper text." },
+      "mono": { "displayName": "Mono", "purpose": "Countable values: money, phones, timestamps, masks, counts." }
+    },
+    "shadows": [
+      {
+        "name": "knob",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "purpose": "The only shadow in the system: the toggle-switch knob, so it reads as a physical control on its track."
+      }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "150ms ease", "purpose": "Default transition for color and border state changes (hover, focus)." },
+      { "name": "press-nudge", "value": "translateY(1px)", "purpose": "Active state on primary controls; a 1px tactile press with no shadow." },
+      { "name": "meter-in", "value": "meter-in 0.45s ease-out both, 45ms stagger", "purpose": "Delivery-meter segments scale in from the baseline, left to right." },
+      { "name": "reduced-motion", "value": "animation/transition-duration 0.01ms", "purpose": "Global prefers-reduced-motion guard collapses all animation and scroll behavior." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Identity-green action. Used for Run summary, sign in, and other commits.",
+      "html": "<button class=\"ds-btn-primary\">Run daily summary</button>",
+      "css": ".ds-btn-primary{background:var(--color-brand);color:var(--color-paper);border:0;border-radius:3px;padding:8px 16px;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:500;line-height:1.5;cursor:pointer;transition:background-color .15s ease}.ds-btn-primary:hover{background:var(--color-brand-strong)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}.ds-btn-primary:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Low-stakes outline action. Used for retry and pagination.",
+      "html": "<button class=\"ds-btn-secondary\">Try again</button>",
+      "css": ".ds-btn-secondary{background:var(--color-paper);color:var(--color-ink);border:1px solid var(--color-line);border-radius:3px;padding:6px 12px;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:500;line-height:1.5;cursor:pointer;transition:border-color .15s ease}.ds-btn-secondary:hover{border-color:var(--color-line-strong)}.ds-btn-secondary:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Soft-filled, tone-paired chip for type and status labels.",
+      "html": "<span class=\"ds-badge\">Credit</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:4px;background:var(--color-brand-soft);color:var(--color-brand);border-radius:3px;padding:2px 8px;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:12px;font-weight:500;line-height:1.4}"
+    },
+    {
+      "name": "Status Dot",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Colored dot plus label; state is never color alone.",
+      "html": "<span class=\"ds-status\"><span class=\"ds-status__led\" style=\"background:var(--color-whatsapp)\"></span>Delivered</span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;gap:8px;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:12px;font-weight:500;color:var(--color-ink)}.ds-status__led{width:8px;height:8px;border-radius:9999px;background:var(--color-line-strong);display:block;flex:0 0 auto}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat paper surface on the canvas; depth by value, not shadow.",
+      "html": "<div class=\"ds-card\"><p style=\"margin:0;font-family:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;font-size:15px;font-weight:600;color:var(--color-ink)\">Recent enrollments</p><p style=\"margin:6px 0 0;color:var(--color-mute)\">No enrollments yet.</p></div>",
+      "css": ".ds-card{background:var(--color-paper);border:1px solid var(--color-line);border-radius:3px;padding:20px;color:var(--color-ink);font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:14px;line-height:1.5}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Paper field with a green focus border and a soft ring halo.",
+      "html": "<input class=\"ds-input\" placeholder=\"you@bank.ng\" />",
+      "css": ".ds-input{width:100%;box-sizing:border-box;background:var(--color-paper);border:1px solid var(--color-line);border-radius:3px;padding:8px 12px;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:14px;color:var(--color-ink);transition:border-color .15s ease,box-shadow .15s ease}.ds-input::placeholder{color:color-mix(in oklab,var(--color-mute) 70%,transparent)}.ds-input:focus{border-color:var(--color-brand);outline:none;box-shadow:0 0 0 2px color-mix(in oklab,var(--color-brand) 15%,transparent)}"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Dark-rail row: 2px LED, glyph, label. Active row lifts and its LED turns amber.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><span class=\"ds-nav-item__led\"></span>Overview</a>",
+      "css": ".ds-nav-item{display:flex;align-items:center;gap:12px;background:var(--color-brand-strong);color:color-mix(in oklab,var(--color-paper) 70%,transparent);border-radius:3px;padding:8px 12px;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:500;text-decoration:none;transition:background-color .15s ease,color .15s ease}.ds-nav-item:hover{background:color-mix(in oklab,var(--color-paper) 5%,transparent);color:var(--color-paper)}.ds-nav-item__led{width:6px;height:6px;border-radius:2px;background:var(--color-line-strong);display:block;flex:0 0 auto}.ds-nav-item--active{background:color-mix(in oklab,var(--color-paper) 10%,transparent);color:var(--color-paper)}.ds-nav-item--active .ds-nav-item__led{background:var(--color-signal)}"
+    },
+    {
+      "name": "Stat Tile",
+      "kind": "card",
+      "refersTo": "stat-tile",
+      "description": "Signature meter reading: LED, label, large tabular display figure, optional sub-line.",
+      "html": "<div class=\"ds-stat\"><p class=\"ds-stat__label\"><span class=\"ds-stat__led\"></span>Enrolled customers</p><p class=\"ds-stat__value\">128</p><p class=\"ds-stat__sub\">last 30 days</p></div>",
+      "css": ".ds-stat{background:var(--color-paper);border:1px solid var(--color-line);border-radius:3px;padding:20px}.ds-stat__label{display:flex;align-items:center;gap:8px;margin:0;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:14px;color:var(--color-mute)}.ds-stat__led{width:6px;height:6px;border-radius:2px;background:var(--color-line-strong);display:block;flex:0 0 auto}.ds-stat__value{margin:8px 0 0;font-family:\"Bricolage Grotesque\",ui-sans-serif,system-ui,sans-serif;font-size:32px;font-weight:600;letter-spacing:-0.01em;color:var(--color-ink);font-variant-numeric:tabular-nums}.ds-stat__sub{margin:6px 0 0;font-family:\"Instrument Sans\",ui-sans-serif,system-ui,sans-serif;font-size:12px;color:var(--color-mute)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Control Room",
+    "overview": "Octave Chime is a calm, always-monitored operations room. Everything on screen answers one question — is delivery flowing, and where did it break? — and the interface is built the way a control room is built: quiet surfaces, hairline panels, small status lights, and figures precise enough to trust at a glance. There is no theatre. The product's own principle (\"operational truth over decoration\") is legible as visual fact: canvas and paper carry the depth, borders do the dividing, and color is spent almost entirely on meaning.\n\nThe density is comfortable rather than packed, but it leans operational: tables, panels, and logs are first-class, and the eye is led by a small vocabulary of LEDs and mono figures rather than by size and ornament. Mood is calm, precise, understated. The type pairing — a characterful grotesque for headings and figures, a clean humanist sans for prose, and a mono reserved for numbers — reads as considered and technical without ever becoming corporate.\n\nOnly one confirmed visual rejection exists, carried from PRODUCT.md: this is not a marketing landing page. No oversized hero sections, no decorative gradients as the idea. WhatsApp green is a status accent, never the theme.",
+    "keyCharacteristics": [
+      "Flat and tonal: depth from surface value (canvas to paper) plus hairline borders, not shadows.",
+      "Small signal vocabulary: LED dots and colored labels carry state; color never appears alone.",
+      "Mono numerals for anything countable — money, phones, timestamps, counts.",
+      "One radius, everywhere: soft-squared 3px; only true circles and 2px micro-indicators deviate.",
+      "Restrained palette: one deep green identity, one amber attention accent, WhatsApp green for notification status only."
+    ],
+    "rules": [
+      { "name": "The Signal-Only Green Rule", "body": "WhatsApp green appears only where notification or delivery status is being stated. It is never a page background, a button fill, or the brand. Its meaning is the point.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "On any given screen the identity green does the structural work and amber appears at most as a few marks. If amber is everywhere, it has stopped being a signal.", "section": "colors" },
+      { "name": "The Tonal Depth Rule", "body": "Depth is created by surface value and hairline borders — never by shadow.", "section": "colors" },
+      { "name": "The Mono-for-Numerals Rule", "body": "Anything countable and comparable — amounts, phone numbers, timestamps, counts, account masks — is set in IBM Plex Mono with tabular figures. Prose is never mono, and mono is never used for a heading.", "section": "typography" },
+      { "name": "The Grotesque-for-Headings Rule", "body": "Headings and large figures use Bricolage Grotesque; body copy uses Instrument Sans. Do not set body copy in the display face, and do not set metrics in the body face.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest and stay flat on hover. Separation is achieved with value and borders, not shadows. The only sanctioned shadow is the switch knob's.", "section": "elevation" },
+      { "name": "The 3px Rule", "body": "Every surface and control uses a 3px corner. Only true circles (toggle, status dots) and 2px micro-indicators (LEDs, meter bars) deviate. No rounded-lg, no pills on content.", "section": "shapes" },
+      { "name": "The Hairline Rule", "body": "Dividers and card borders are 1px in the hairline tones. Never thicken a border to create hierarchy — use value or whitespace instead.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do create depth with surface value and 1px hairline borders — canvas behind paper, never a shadow.",
+      "Do render every countable value (money, phones, timestamps, counts, account masks) in IBM Plex Mono with tabular-nums.",
+      "Do use 3px corners on all surfaces and controls, and reserve 2px for LED dots and meter bars.",
+      "Do pair every status color with a label or an LED-plus-text; color alone never carries state.",
+      "Do reserve WhatsApp green (#1da851) for notification/delivery status and keep the identity green for structure and actions.",
+      "Do give primary controls a 1px press nudge (active:translate-y-px) and a border/darker-tone hover, not a shadow."
+    ],
+    "donts": [
+      "Don't add shadows to cards, headers, dropdowns, or buttons — the switch knob is the only sanctioned shadow.",
+      "Don't introduce a second radius scale, pills on content, or rounded-lg.",
+      "Don't build oversized hero sections, decorative gradients, or marketing-style landing layouts.",
+      "Don't let WhatsApp green or Amber Signal become a surface or brand fill; both are signals, not grounds.",
+      "Don't set body copy in Bricolage Grotesque or a heading in Instrument Sans.",
+      "Don't invent new status colors; map to the existing nominal / alert / caution / WhatsApp set."
+    ]
+  }
+}

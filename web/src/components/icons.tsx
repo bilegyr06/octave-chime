@@ -129,6 +129,24 @@ export function ChevronRightIcon(props: IconProps) {
   );
 }
 
+export function RefreshIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 4v6h-6" />
+    </Base>
+  );
+}
+
+export function TerminalIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="m5 8 3 4-3 4" />
+      <path d="M12 16h6" />
+    </Base>
+  );
+}
+
 export function CopyIcon(props: IconProps) {
   return (
     <Base {...props}>

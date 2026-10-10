@@ -168,7 +168,7 @@ export function SettingsData() {
 
   return (
     <div className="space-y-5">
-<div>
+      <div>
           <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Settings</h1>
           <p className="mt-1 text-sm text-mute">
             Tenant identity, the support contact shown on alerts, and the bank-wide

@@ -79,9 +79,9 @@ interface TranscriptMsg {
 }
 
 function notificationBadgeLabel(m: TranscriptMsg): string {
-  if (m.status === "sent") return "Delivered";
+  if (m.status === "sent") return "Sent";
   if (m.status === "queued") return "Queued";
-  return `Not delivered: ${m.errorMessage ?? m.status ?? "unknown"}`;
+  return `Failed: ${m.errorMessage ?? m.status ?? "unknown"}`;
 }
 
 const URL_RE = /(https?:\/\/\S+)/g;
@@ -213,7 +213,7 @@ export function DevConsole() {
   }, [waPhone, waReload]);
 
   // Pin to the latest message only on user send, phone switch, or when already
-  // at the bottom — never yank the reader away from older history.
+  // at the bottom - never yank the reader away from older history.
   const forceScrollRef = useRef(false);
   const lastPhoneRef = useRef(waPhone);
 
@@ -342,8 +342,8 @@ export function DevConsole() {
       <div>
         <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Demo controls</h1>
         <p className="mt-1 text-sm text-mute">
-          Simulated transactions, daily summary runs, and the WhatsApp mock inbound —
-          all cross-bank through the dev operator session.
+          Simulated transactions, daily summary runs, and the WhatsApp mock inbound, all
+          cross-bank through the dev operator session.
         </p>
       </div>
 
@@ -488,7 +488,7 @@ export function DevConsole() {
               Daily summary run
             </h2>
             <p className="mt-0.5 text-xs text-mute">
-              Equivalent of the 21:00 Lagos cron — generates and delivers end-of-day briefings now.
+              Equivalent of the 21:00 Lagos cron: generates and delivers end-of-day briefings now.
             </p>
           </div>
           <div className="px-5 py-5">
@@ -534,7 +534,7 @@ export function DevConsole() {
               </div>
             ) : (
               <p className="mt-4 text-sm text-mute">
-                No run yet this session — run to deliver briefings for today.
+                No run yet this session. Run to deliver briefings for today.
               </p>
             )}
           </div>
@@ -563,7 +563,7 @@ export function DevConsole() {
           <div className="flex min-h-0 flex-col gap-3 px-5 py-5">
             {simDisabled ? (
               <p className="rounded-[3px] border border-warn/30 bg-warn/5 px-3 py-2 text-sm text-warn">
-                Termii is in live mode — the simulator is disabled so it cannot
+                Termii is in live mode, so the simulator is disabled and cannot
                 message real WhatsApp numbers.
               </p>
             ) : null}
@@ -663,7 +663,7 @@ export function DevConsole() {
                   return (
                     <div
                       key={m.id}
-                      className={`max-w-[85%] break-words rounded-[4px] px-3 py-2 text-sm whitespace-pre-wrap ${
+                      className={`max-w-[85%] break-words rounded-[3px] px-3 py-2 text-sm whitespace-pre-wrap ${
                         m.direction === "inbound"
                           ? "ml-auto bg-brand-soft text-ink"
                           : "mr-auto border border-line bg-paper text-ink"
@@ -697,7 +697,7 @@ export function DevConsole() {
               Cross-bank metrics
             </h2>
             <p className="mt-0.5 text-xs text-mute">
-              Live dashboard figures per tenant bank — all accessible to the dev operator.
+              Live dashboard figures per tenant bank, all accessible to the dev operator.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -738,7 +738,7 @@ export function DevConsole() {
                 key={m.bank?.id ?? m.failedAlertsToday}
                 className="grid items-center gap-4 px-5 py-3 sm:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.8fr]"
               >
-                <span className="text-sm font-medium text-ink">{m.bank?.name ?? "—"}</span>
+                <span className="text-sm font-medium text-ink">{m.bank?.name ?? "Unknown"}</span>
                 <span className="text-right text-sm tabular text-ink">
                   {m.enrolledCustomers}
                 </span>
