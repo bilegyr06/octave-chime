@@ -250,8 +250,10 @@ export function OverviewData() {
 
   useEffect(() => {
     let disposed = false;
-    const id = setInterval(() => {
-      if (disposed || document.hidden) return;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const refetch = () => {
+      if (disposed) return;
       api<DashboardMetrics>("/api/dashboard/metrics")
         .then((m) => {
           if (!disposed) {
@@ -260,10 +262,31 @@ export function OverviewData() {
           }
         })
         .catch(() => {});
-    }, 45_000);
+    };
+
+    const start = () => {
+      if (disposed) return;
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => {
+        if (disposed || document.hidden) return;
+        refetch();
+      }, 45_000);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refetch();
+        start();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    start();
+
     return () => {
       disposed = true;
-      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (timer) clearInterval(timer);
     };
   }, []);
 
