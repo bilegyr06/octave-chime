@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { initials } from "@/lib/format";
 import type { BankProfile, SessionAdmin } from "@/lib/session";
@@ -114,19 +114,55 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLElement | null>(null);
   const date = new Intl.DateTimeFormat("en-NG", {
     weekday: "short",
     day: "numeric",
     month: "short",
   }).format(new Date());
 
+  const closeDrawer = () => setOpen(false);
+
   useEffect(() => {
     if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const focusables = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    first?.focus();
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onFocusIn = () => {
+      if (!dialog.contains(document.activeElement)) first?.focus();
+    };
+
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("focusin", onFocusIn);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("focusin", onFocusIn);
+      if (previouslyFocused) previouslyFocused.focus();
+    };
   }, [open]);
 
   return (
@@ -139,13 +175,13 @@ export function DashboardShell({
       {/* Mobile drawer */}
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close navigation"
+          <div
+            aria-hidden="true"
             className="absolute inset-0 bg-ink/50"
-            onClick={() => setOpen(false)}
+            onClick={closeDrawer}
           />
           <aside
+            ref={dialogRef}
             className="absolute inset-y-0 left-0 w-64 bg-brand-strong"
             role="dialog"
             aria-modal="true"
@@ -153,7 +189,7 @@ export function DashboardShell({
           >
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeDrawer}
               className="absolute right-3 top-4 rounded-[3px] p-1.5 text-paper/70 hover:bg-paper/10 hover:text-paper"
               aria-label="Close navigation"
             >
@@ -165,7 +201,7 @@ export function DashboardShell({
       ) : null}
 
       {/* Main column */}
-      <div className="lg:pl-60">
+      <div className="lg:pl-60" inert={open}>
         <header className="sticky top-0 z-20 border-b border-line bg-canvas/90 backdrop-blur">
           <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
             <div className="flex items-center gap-3">

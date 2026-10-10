@@ -173,24 +173,24 @@ export function OverviewData() {
     };
   }, [reloadKey]);
 
-  if (error) {
-    return (
-      <ErrorState
-        title="Metrics failed to load"
-        hint={error}
-        onRetry={() => {
-          setError(null);
-          setReloadKey((k) => k + 1);
-        }}
-      />
-    );
-  }
-  if (!metrics) {
-    return <Spinner label="Loading metrics" />;
-  }
-
   return (
     <div className="space-y-6">
+      <p className="sr-only" role="status" aria-live="polite">
+        {error ? "Metrics failed to load." : metrics ? "Metrics updated." : "Loading metrics."}
+      </p>
+      {error ? (
+        <ErrorState
+          title="Metrics failed to load"
+          hint={error}
+          onRetry={() => {
+            setError(null);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      ) : !metrics ? (
+        <Spinner label="Loading metrics" />
+      ) : (
+        <>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Overview</h1>
@@ -272,6 +272,8 @@ export function OverviewData() {
           )}
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }
