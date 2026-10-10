@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatCount, formatDate } from "@/lib/format";
+import { formatCount, formatDate, formatUpdated } from "@/lib/format";
 import {
   notificationStatusMap,
   notificationTypeLabel,
   serviceStatusMap,
 } from "@/lib/status";
 import { Badge, Card, EmptyState, ErrorState, Led, Spinner, StatusDot } from "./ui";
-import { AlertIcon, ChevronRightIcon } from "./icons";
+import { AlertIcon, ChevronRightIcon, RefreshIcon } from "./icons";
 
 interface RecentEnrollment {
   id: string;
@@ -170,6 +170,8 @@ export function OverviewData() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -179,11 +181,35 @@ export function OverviewData() {
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load metrics");
+      })
+      .finally(() => {
+        if (!cancelled) setRefreshing(false);
       });
     return () => {
       cancelled = true;
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    let disposed = false;
+    const id = setInterval(() => {
+      if (disposed || document.hidden) return;
+      api<DashboardMetrics>("/api/dashboard/metrics")
+        .then((m) => {
+          if (!disposed) setMetrics(m);
+        })
+        .catch(() => {});
+    }, 45_000);
+    return () => {
+      disposed = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -196,7 +222,30 @@ export function OverviewData() {
           <p className="mt-1 text-sm text-mute">{metrics?.bank?.name}</p>
         </div>
         {metrics ? (
-          <p className="text-xs text-mute">updated {formatDate(metrics.generatedAt)}</p>
+          <div className="flex items-center gap-3">
+            <p
+              suppressHydrationWarning
+              className={`text-xs ${
+                now - Date.parse(metrics.generatedAt) > 120_000
+                  ? "font-medium text-warn"
+                  : "text-mute"
+              }`}
+            >
+              updated {formatUpdated(metrics.generatedAt, now)}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setRefreshing(true);
+                setError(null);
+                setReloadKey((k) => k + 1);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-paper px-2.5 py-1 text-xs font-medium text-ink hover:border-line-strong"
+            >
+              <RefreshIcon className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         ) : null}
       </div>
       {error ? (

@@ -30,6 +30,16 @@ export function formatDate(value: string | Date): string {
   }).format(d);
 }
 
+export function formatUpdated(value: string | Date, now: number): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  const diffMs = Math.max(0, now - d.getTime());
+  const seconds = Math.floor(diffMs / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  return `${Math.floor(minutes / 60)}h ago`;
+}
+
 export function formatTime(hhmm: string): string {
   const [hh, mm] = hhmm.split(":").map(Number);
   const d = new Date();
