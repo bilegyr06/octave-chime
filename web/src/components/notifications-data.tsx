@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
@@ -46,12 +47,17 @@ const DOT_CLASS: Record<string, string> = {
   mute: "bg-line-strong",
 };
 
-export function NotificationsData({ initialStatus = "" }: { initialStatus?: string }) {
+export function NotificationsData() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const type = searchParams.get("type") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [type, setType] = useState("");
-  const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -79,17 +85,28 @@ export function NotificationsData({ initialStatus = "" }: { initialStatus?: stri
     };
   }, [page, type, status, reloadKey]);
 
-  const changeFilter = (setter: (v: string) => void) => (value: string) => {
-    setPage(1);
-    setLoading(true);
+  const navigate = (patch: Record<string, string>): boolean => {
+    const params = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    const query = params.toString();
+    const next = query ? `${pathname}?${query}` : pathname;
+    const current = searchParams.toString();
+    if (current === query) return false;
+    router.push(next, { scroll: false });
+    return true;
+  };
+
+  const changeFilter = (key: "type" | "status") => (value: string) => {
     setError(null);
-    setter(value);
+    setLoading(navigate({ [key]: value, page: "" }));
   };
 
   const gotoPage = (p: number) => {
-    setLoading(true);
     setError(null);
-    setPage(p);
+    setLoading(navigate({ page: p > 1 ? String(p) : "" }));
   };
 
   const retry = () => {
@@ -112,7 +129,7 @@ export function NotificationsData({ initialStatus = "" }: { initialStatus?: stri
           <select
             className={`${inputClass} w-auto`}
             value={type}
-            onChange={(e) => changeFilter(setType)(e.target.value)}
+            onChange={(e) => changeFilter("type")(e.target.value)}
           >
             <option value="">All types</option>
             {TYPE_FILTERS.filter(Boolean).map((t) => (
@@ -124,7 +141,7 @@ export function NotificationsData({ initialStatus = "" }: { initialStatus?: stri
           <select
             className={`${inputClass} w-auto`}
             value={status}
-            onChange={(e) => changeFilter(setStatus)(e.target.value)}
+            onChange={(e) => changeFilter("status")(e.target.value)}
           >
             <option value="">All status</option>
             {STATUS_FILTERS.filter(Boolean).map((s) => (
