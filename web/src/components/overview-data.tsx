@@ -10,7 +10,7 @@ import {
   serviceStatusMap,
 } from "@/lib/status";
 import { Badge, Card, EmptyState, ErrorState, Led, Spinner, StatusDot } from "./ui";
-import { AlertIcon, ChevronRightIcon, RefreshIcon } from "./icons";
+import { ChevronRightIcon, RefreshIcon } from "./icons";
 
 interface RecentEnrollment {
   id: string;
@@ -83,24 +83,6 @@ function MiniStat({
         {formatCount(value)}
       </p>
       {period ? <p className="mt-0.5 text-[11px] text-mute">{period}</p> : null}
-    </div>
-  );
-}
-
-function FailureBand({ failed }: { failed: number }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[3px] border border-danger/30 bg-danger-soft px-4 py-3">
-      <AlertIcon className="h-5 w-5 shrink-0 text-danger" />
-      <p className="text-sm font-medium text-danger">
-        {formatCount(failed)} {failed === 1 ? "alert" : "alerts"} failed to send today
-      </p>
-      <Link
-        href="/notifications?status=failed"
-        className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-danger hover:underline"
-      >
-        Review failed
-        <ChevronRightIcon className="h-4 w-4" />
-      </Link>
     </div>
   );
 }
@@ -364,10 +346,6 @@ export function OverviewData() {
         <Spinner label="Loading metrics" />
       ) : (
         <>
-      {metrics.failedAlertsToday > 0 ? (
-        <FailureBand failed={metrics.failedAlertsToday} />
-      ) : null}
-
       <SignalBar metrics={metrics} now={now} />
 
       <div className="grid gap-4 lg:grid-cols-5">
