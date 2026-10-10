@@ -121,16 +121,6 @@ function SignalBar({
       : failed > 0
         ? "danger"
         : "whatsapp";
-  const segmentStates: string[] = (() => {
-    if (total === 0) return Array(8).fill("bg-line/60");
-    return Array.from({ length: 8 }, (_, i) => {
-      const position = (i + 1) / 8;
-      if (position <= sent / total) return "bg-brand";
-      if (position <= (sent + queued) / total) return "bg-signal";
-      if (position <= (sent + queued + failed) / total) return "bg-danger";
-      return "bg-line/60";
-    });
-  })();
   return (
     <Card className="px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
@@ -167,28 +157,40 @@ function SignalBar({
           <MiniStat label="Daily summaries" value={metrics.dailySummariesToday} />
         </div>
       </div>
-      <div
-        aria-hidden
-        className="mt-6 flex items-end gap-1"
-      >
-        {segmentStates.map((state, i) => (
-          <span
-            key={i}
-            style={{ animationDelay: `${i * 45}ms` }}
-            className={`h-7 flex-1 origin-bottom rounded-[2px] motion-safe:animate-[meter-in_0.45s_ease-out_both] ${state}`}
-          />
-        ))}
-      </div>
+      <div aria-hidden className="mt-6 flex h-7 overflow-hidden rounded-[3px] bg-line/60">
+          {total > 0 ? (
+            <>
+              {sent > 0 ? (
+                <span
+                  className="h-full origin-bottom bg-brand motion-safe:animate-[meter-in_0.45s_ease-out_both]"
+                  style={{ width: `${(sent / total) * 100}%` }}
+                />
+              ) : null}
+              {queued > 0 ? (
+                <span
+                  className="h-full origin-bottom bg-signal motion-safe:animate-[meter-in_0.45s_ease-out_both]"
+                  style={{ width: `${(queued / total) * 100}%`, animationDelay: "90ms" }}
+                />
+              ) : null}
+              {failed > 0 ? (
+                <span
+                  className="h-full origin-bottom bg-danger motion-safe:animate-[meter-in_0.45s_ease-out_both]"
+                  style={{ width: `${(failed / total) * 100}%`, animationDelay: "180ms" }}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5">
         <p className="font-mono text-xs text-mute">
           {total > 0
-            ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} sent today`
+            ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} transaction alerts sent today`
             : metrics.lastAlertReceivedAt
               ? `Last alert received ${formatDate(metrics.lastAlertReceivedAt)}`
               : "No transaction alerts yet today"}
         </p>
         <p className="text-xs text-mute">
-          Sent — handed to WhatsApp · Queued — waiting · Failed — rejected · Skipped — held back
+          Sent — handed to WhatsApp · Queued — waiting · Failed — rejected
         </p>
       </div>
     </Card>
