@@ -167,6 +167,12 @@ export function DashboardShell({
 
   return (
     <div className="min-h-dvh">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[3px] focus:border focus:border-line-strong focus:bg-paper focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-ink"
+      >
+        Skip to content
+      </a>
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-paper/10 bg-brand-strong lg:flex">
         <SidebarContent admin={admin} tenant={tenant} />
@@ -219,7 +225,7 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+        <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">{children}</main>
       </div>
     </div>
   );

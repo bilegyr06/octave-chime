@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatDate } from "@/lib/format";
+import { formatCount, formatDate } from "@/lib/format";
 import {
   notificationStatusMap,
   notificationTypeLabel,
   serviceStatusMap,
 } from "@/lib/status";
-import { Badge, Card, EmptyState, ErrorState, Led, Spinner } from "./ui";
+import { Badge, Card, EmptyState, ErrorState, Led, Spinner, StatusDot } from "./ui";
 import { AlertIcon, ChevronRightIcon } from "./icons";
 
 interface RecentEnrollment {
@@ -69,7 +69,7 @@ function MiniStat({ label, value }: { label: string; value: number }) {
     <div>
       <p className="text-xs text-mute">{label}</p>
       <p className="mt-0.5 font-display text-xl font-semibold tracking-tight tabular text-ink">
-        {value}
+        {formatCount(value)}
       </p>
     </div>
   );
@@ -80,7 +80,7 @@ function FailureBand({ failed }: { failed: number }) {
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[3px] border border-danger/30 bg-danger-soft px-4 py-3">
       <AlertIcon className="h-5 w-5 shrink-0 text-danger" />
       <p className="text-sm font-medium text-danger">
-        {failed} {failed === 1 ? "alert" : "alerts"} failed to send today
+        {formatCount(failed)} {failed === 1 ? "alert" : "alerts"} failed to send today
       </p>
       <Link
         href="/notifications"
@@ -98,16 +98,17 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
   const rate = attempts > 0 ? metrics.alertsSentToday / attempts : 0;
   const filled = attempts > 0 ? Math.max(1, Math.min(8, Math.round(rate * 8))) : 0;
   const liveEdge = attempts > 0 && metrics.failedAlertsToday > 0;
+  const tone = attempts === 0 ? "mute" : metrics.failedAlertsToday > 0 ? "danger" : "whatsapp";
   return (
     <Card className="px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
         <div>
           <p className="flex items-center gap-2 text-sm text-mute">
-            <Led tone={metrics.failedAlertsToday > 0 ? "danger" : "whatsapp"} />
+            <Led tone={tone} />
             Alerts sent today
           </p>
           <p className="mt-1 font-display text-[44px] font-semibold leading-none tracking-tight tabular text-ink">
-            {metrics.alertsSentToday}
+            {formatCount(metrics.alertsSentToday)}
           </p>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-mute">
             {attempts === 0 ? (
@@ -116,11 +117,11 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
               <>
                 {metrics.failedAlertsToday > 0 ? (
                   <span className="font-medium text-danger">
-                    {metrics.failedAlertsToday} failed to send
+                    {formatCount(metrics.failedAlertsToday)} failed to send
                   </span>
                 ) : null}
                 {metrics.queuedAlertsToday > 0 ? (
-                  <span>{metrics.queuedAlertsToday} queued</span>
+                  <span>{formatCount(metrics.queuedAlertsToday)} queued</span>
                 ) : null}
                 {metrics.failedAlertsToday === 0 && metrics.queuedAlertsToday === 0 ? (
                   <span>Nothing queued or failed today</span>
@@ -150,6 +151,16 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
           />
         ))}
       </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5">
+        <p className="font-mono text-xs text-mute">
+          {attempts > 0
+            ? `${Math.round(rate * 100)}% of ${formatCount(attempts)} attempted`
+            : "No attempts today"}
+        </p>
+        <p className="text-xs text-mute">
+          Sent — handed to WhatsApp · Queued — waiting · Failed — rejected · Skipped — held back
+        </p>
+      </div>
     </Card>
   );
 }
@@ -178,6 +189,15 @@ export function OverviewData() {
       <p className="sr-only" role="status" aria-live="polite">
         {error ? "Metrics failed to load." : metrics ? "Metrics updated." : "Loading metrics."}
       </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Overview</h1>
+          <p className="mt-1 text-sm text-mute">{metrics?.bank?.name}</p>
+        </div>
+        {metrics ? (
+          <p className="text-xs text-mute">updated {formatDate(metrics.generatedAt)}</p>
+        ) : null}
+      </div>
       {error ? (
         <ErrorState
           title="Metrics failed to load"
@@ -191,14 +211,6 @@ export function OverviewData() {
         <Spinner label="Loading metrics" />
       ) : (
         <>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Overview</h1>
-          <p className="mt-1 text-sm text-mute">{metrics.bank?.name ?? "Platform"}</p>
-        </div>
-        <p className="text-xs text-mute">updated {formatDate(metrics.generatedAt)}</p>
-      </div>
-
       {metrics.failedAlertsToday > 0 ? (
         <FailureBand failed={metrics.failedAlertsToday} />
       ) : null}
@@ -224,18 +236,11 @@ export function OverviewData() {
                       <p className="truncate font-mono text-xs text-mute">{n.recipient}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <Badge tone="brand">{notificationTypeLabel[n.type] ?? n.type}</Badge>
-                      <span className="inline-flex items-center gap-2 text-xs font-medium text-ink">
-                        <span
-                          className={`h-2 w-2 rounded-full ${
-                            { ok: "bg-ok", whatsapp: "bg-whatsapp", danger: "bg-danger", warn: "bg-warn", mute: "bg-line-strong" }[status.tone]
-                          }`}
-                        />
-                        {status.label}
-                      </span>
-                      <span className="w-16 text-right font-mono text-xs text-mute">
-                        {formatDate(n.createdAt)}
-                      </span>
+<Badge tone="brand">{notificationTypeLabel[n.type] ?? n.type}</Badge>
+                      <StatusDot tone={status.tone} label={status.label} />
+                      <span className="w-24 text-right font-mono text-xs text-mute">
+                      {formatDate(n.createdAt)}
+                    </span>
                     </div>
                   </li>
                 );
@@ -262,7 +267,7 @@ export function OverviewData() {
                     <Badge tone={serviceStatusMap[c.serviceStatus]?.tone ?? "mute"}>
                       {serviceStatusMap[c.serviceStatus]?.label ?? c.serviceStatus}
                     </Badge>
-                    <span className="w-16 text-right font-mono text-xs text-mute">
+                    <span className="w-24 text-right font-mono text-xs text-mute">
                       {formatDate(c.createdAt)}
                     </span>
                   </div>

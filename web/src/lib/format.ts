@@ -10,8 +10,14 @@ const plain = new Intl.NumberFormat("en-NG", {
   maximumFractionDigits: 2,
 });
 
+const count = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 });
+
 export function money(n: number, currency = "NGN"): string {
   return currency === "NGN" ? naira.format(n) : `${currency} ${plain.format(n)}`;
+}
+
+export function formatCount(n: number): string {
+  return count.format(n);
 }
 
 export function formatDate(value: string | Date): string {
