@@ -203,6 +203,7 @@ export function OverviewData() {
   const [reloadKey, setReloadKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [now, setNow] = useState<number>(() => Date.now());
+  const stale = metrics !== null && now - Date.parse(metrics.generatedAt) > 120_000;
 
   useEffect(() => {
     let cancelled = false;
@@ -245,7 +246,11 @@ export function OverviewData() {
   return (
     <div className="space-y-6">
       <p className="sr-only" role="status" aria-live="polite">
-        {error ? "Metrics failed to load." : metrics ? "Metrics updated." : "Loading metrics."}
+        {error
+          ? "Metrics failed to load."
+          : metrics
+            ? `Metrics updated · ${formatCount(metrics.alertsSentToday)} sent today.`
+            : "Loading metrics."}
       </p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -257,21 +262,21 @@ export function OverviewData() {
             <p
               suppressHydrationWarning
               className={`text-xs ${
-                now - Date.parse(metrics.generatedAt) > 120_000
-                  ? "font-medium text-warn"
-                  : "text-mute"
+                stale ? "font-medium text-warn" : "text-mute"
               }`}
             >
-              updated {formatUpdated(metrics.generatedAt, now)}
+              {stale ? "stale · " : ""}updated {formatUpdated(metrics.generatedAt, now)}
             </p>
             <button
               type="button"
+              disabled={refreshing}
+              aria-busy={refreshing}
               onClick={() => {
                 setRefreshing(true);
                 setError(null);
                 setReloadKey((k) => k + 1);
               }}
-              className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-paper px-2.5 py-1 text-xs font-medium text-ink hover:border-line-strong"
+              className="inline-flex items-center gap-1.5 rounded-[3px] border border-line bg-paper px-2.5 py-1 text-xs font-medium text-ink hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshIcon className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               Refresh
