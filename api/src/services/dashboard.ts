@@ -14,7 +14,7 @@ export async function getDashboardMetrics(
 
   const base = bankId ? { bankId } : {};
 
-  const [bank, enrolledCustomers, linkedAccounts, whatsappEnabledCustomers, alertsSentToday, failedAlertsToday, dailySummariesToday, recentEnrollments, deliveryLog] =
+  const [bank, enrolledCustomers, linkedAccounts, whatsappEnabledCustomers, alertsSentToday, queuedAlertsToday, failedAlertsToday, dailySummariesToday, recentEnrollments, deliveryLog] =
     await Promise.all([
       bankId ? prisma.bank.findUnique({ where: { id: bankId } }) : null,
       prisma.customer.count({ where: { ...base, enrollmentStatus: "completed" } }),
@@ -24,6 +24,9 @@ export async function getDashboardMetrics(
       }),
       prisma.notification.count({
         where: { ...base, type: "transaction_alert", status: "sent", createdAt: { gte: start } },
+      }),
+      prisma.notification.count({
+        where: { ...base, type: "transaction_alert", status: "queued", createdAt: { gte: start } },
       }),
       prisma.notification.count({
         where: { ...base, status: "failed", createdAt: { gte: start } },
@@ -57,6 +60,7 @@ export async function getDashboardMetrics(
     linkedAccounts,
     whatsappEnabledCustomers,
     alertsSentToday,
+    queuedAlertsToday,
     failedAlertsToday,
     dailySummariesToday,
     recentEnrollments,

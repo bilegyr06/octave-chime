@@ -6,6 +6,7 @@ export interface DashboardMetrics {
   linkedAccounts: number;
   whatsappEnabledCustomers: number;
   alertsSentToday: number;
+  queuedAlertsToday: number;
   failedAlertsToday: number;
   dailySummariesToday: number;
   recentEnrollments: {

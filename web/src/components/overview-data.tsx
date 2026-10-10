@@ -10,7 +10,7 @@ import {
   serviceStatusMap,
 } from "@/lib/status";
 import { Badge, Card, EmptyState, ErrorState, Led, Spinner } from "./ui";
-import { ChevronRightIcon } from "./icons";
+import { AlertIcon, ChevronRightIcon } from "./icons";
 
 interface RecentEnrollment {
   id: string;
@@ -36,6 +36,7 @@ interface DashboardMetrics {
   linkedAccounts: number;
   whatsappEnabledCustomers: number;
   alertsSentToday: number;
+  queuedAlertsToday: number;
   failedAlertsToday: number;
   dailySummariesToday: number;
   recentEnrollments: RecentEnrollment[];
@@ -43,7 +44,7 @@ interface DashboardMetrics {
   generatedAt: string;
 }
 
-function PanelHeader({ title, href, led = "brand" }: { title: string; href?: string; led?: "brand" | "signal" | "danger" }) {
+function PanelHeader({ title, href, led = "brand" }: { title: string; href?: string; led?: "brand" | "signal" | "danger" | "whatsapp" }) {
   return (
     <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
       <h2 className="flex items-center gap-2.5 font-display text-[15px] font-semibold text-ink">
@@ -74,6 +75,24 @@ function MiniStat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function FailureBand({ failed }: { failed: number }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[3px] border border-danger/30 bg-danger-soft px-4 py-3">
+      <AlertIcon className="h-5 w-5 shrink-0 text-danger" />
+      <p className="text-sm font-medium text-danger">
+        {failed} {failed === 1 ? "alert" : "alerts"} failed to send today
+      </p>
+      <Link
+        href="/notifications"
+        className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-danger hover:underline"
+      >
+        Review failed
+        <ChevronRightIcon className="h-4 w-4" />
+      </Link>
+    </div>
+  );
+}
+
 function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
   const attempts = metrics.alertsSentToday + metrics.failedAlertsToday;
   const rate = attempts > 0 ? metrics.alertsSentToday / attempts : 0;
@@ -85,17 +104,29 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
         <div>
           <p className="flex items-center gap-2 text-sm text-mute">
             <Led tone={metrics.failedAlertsToday > 0 ? "danger" : "whatsapp"} />
-            Alerts delivered today
+            Alerts sent today
           </p>
           <p className="mt-1 font-display text-[44px] font-semibold leading-none tracking-tight tabular text-ink">
             {metrics.alertsSentToday}
           </p>
-          <p className="mt-2 text-sm text-mute">
-            {attempts === 0
-              ? "Nothing sent yet today"
-              : metrics.failedAlertsToday > 0
-                ? `${metrics.failedAlertsToday} failed to send`
-                : "All delivering clean"}
+          <p className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-mute">
+            {attempts === 0 ? (
+              <span>Nothing sent yet today</span>
+            ) : (
+              <>
+                {metrics.failedAlertsToday > 0 ? (
+                  <span className="font-medium text-danger">
+                    {metrics.failedAlertsToday} failed to send
+                  </span>
+                ) : null}
+                {metrics.queuedAlertsToday > 0 ? (
+                  <span>{metrics.queuedAlertsToday} queued</span>
+                ) : null}
+                {metrics.failedAlertsToday === 0 && metrics.queuedAlertsToday === 0 ? (
+                  <span>Nothing queued or failed today</span>
+                ) : null}
+              </>
+            )}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-4">
@@ -168,39 +199,15 @@ export function OverviewData() {
         <p className="text-xs text-mute">updated {formatDate(metrics.generatedAt)}</p>
       </div>
 
+      {metrics.failedAlertsToday > 0 ? (
+        <FailureBand failed={metrics.failedAlertsToday} />
+      ) : null}
+
       <SignalBar metrics={metrics} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="overflow-hidden">
-          <PanelHeader title="Recent enrollments" href="/customers" />
-          {metrics.recentEnrollments.length === 0 ? (
-            <EmptyState title="No enrollments yet" hint="New sign-ups will appear here." />
-          ) : (
-            <ul className="divide-y divide-line">
-              {metrics.recentEnrollments.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink">{c.fullName}</p>
-                    {c.whatsappPhone ? (
-                      <p className="font-mono text-xs text-mute">{c.whatsappPhone}</p>
-                    ) : null}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <Badge tone={serviceStatusMap[c.serviceStatus]?.tone ?? "mute"}>
-                      {serviceStatusMap[c.serviceStatus]?.label ?? c.serviceStatus}
-                    </Badge>
-                    <span className="w-16 text-right font-mono text-xs text-mute">
-                      {formatDate(c.createdAt)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <Card className="overflow-hidden">
-          <PanelHeader title="Recent delivery log" href="/notifications" />
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Card className="overflow-hidden lg:col-span-3">
+          <PanelHeader title="Recent delivery log" href="/notifications" led="whatsapp" />
           {metrics.recentDeliveryLog.length === 0 ? (
             <EmptyState title="No deliveries yet" hint="Sent alerts will show up here." />
           ) : (
@@ -233,6 +240,34 @@ export function OverviewData() {
                   </li>
                 );
               })}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="overflow-hidden lg:col-span-2">
+          <PanelHeader title="Recent enrollments" href="/customers" />
+          {metrics.recentEnrollments.length === 0 ? (
+            <EmptyState title="No enrollments yet" hint="New sign-ups will appear here." />
+          ) : (
+            <ul className="divide-y divide-line">
+              {metrics.recentEnrollments.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-ink">{c.fullName}</p>
+                    {c.whatsappPhone ? (
+                      <p className="font-mono text-xs text-mute">{c.whatsappPhone}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Badge tone={serviceStatusMap[c.serviceStatus]?.tone ?? "mute"}>
+                      {serviceStatusMap[c.serviceStatus]?.label ?? c.serviceStatus}
+                    </Badge>
+                    <span className="w-16 text-right font-mono text-xs text-mute">
+                      {formatDate(c.createdAt)}
+                    </span>
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
         </Card>

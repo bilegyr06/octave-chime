@@ -79,9 +79,9 @@ interface TranscriptMsg {
 }
 
 function notificationBadgeLabel(m: TranscriptMsg): string {
-  if (m.status === "sent") return "Delivered";
+  if (m.status === "sent") return "Sent";
   if (m.status === "queued") return "Queued";
-  return `Not delivered: ${m.errorMessage ?? m.status ?? "unknown"}`;
+  return `Failed: ${m.errorMessage ?? m.status ?? "unknown"}`;
 }
 
 const URL_RE = /(https?:\/\/\S+)/g;
