@@ -95,11 +95,21 @@ function FailureBand({ failed }: { failed: number }) {
 }
 
 function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
-  const attempts = metrics.alertsSentToday + metrics.failedAlertsToday;
-  const rate = attempts > 0 ? metrics.alertsSentToday / attempts : 0;
-  const filled = attempts > 0 ? Math.max(1, Math.min(8, Math.round(rate * 8))) : 0;
-  const liveEdge = attempts > 0 && metrics.failedAlertsToday > 0;
-  const tone = attempts === 0 ? "mute" : metrics.failedAlertsToday > 0 ? "danger" : "whatsapp";
+  const sent = metrics.alertsSentToday;
+  const queued = metrics.queuedAlertsToday;
+  const failed = metrics.failedAlertsToday;
+  const total = sent + queued + failed;
+  const tone = total === 0 ? "mute" : failed > 0 ? "danger" : "whatsapp";
+  const segmentStates: string[] = (() => {
+    if (total === 0) return Array(8).fill("bg-line/60");
+    return Array.from({ length: 8 }, (_, i) => {
+      const position = (i + 1) / 8;
+      if (position <= sent / total) return "bg-brand";
+      if (position <= (sent + queued) / total) return "bg-signal";
+      if (position <= (sent + queued + failed) / total) return "bg-danger";
+      return "bg-line/60";
+    });
+  })();
   return (
     <Card className="px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
@@ -109,26 +119,18 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
             Alerts sent today
           </p>
           <p className="mt-1 font-display text-[44px] font-semibold leading-none tracking-tight tabular text-ink">
-            {formatCount(metrics.alertsSentToday)}
+            {formatCount(sent)}
           </p>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-mute">
-            {attempts === 0 ? (
-              <span>Nothing sent yet today</span>
-            ) : (
-              <>
-                {metrics.failedAlertsToday > 0 ? (
-                  <span className="font-medium text-danger">
-                    {formatCount(metrics.failedAlertsToday)} failed to send
-                  </span>
-                ) : null}
-                {metrics.queuedAlertsToday > 0 ? (
-                  <span>{formatCount(metrics.queuedAlertsToday)} queued</span>
-                ) : null}
-                {metrics.failedAlertsToday === 0 && metrics.queuedAlertsToday === 0 ? (
-                  <span>Nothing queued or failed today</span>
-                ) : null}
-              </>
-            )}
+            {failed > 0 ? (
+              <span className="font-medium text-danger">
+                {formatCount(failed)} failed to send
+              </span>
+            ) : null}
+            {queued > 0 ? <span>{formatCount(queued)} queued</span> : null}
+            {failed === 0 && queued === 0 ? (
+              <span>{total === 0 ? "Nothing sent yet today" : "All sent"}</span>
+            ) : null}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-4">
@@ -142,21 +144,19 @@ function SignalBar({ metrics }: { metrics: DashboardMetrics }) {
         aria-hidden
         className="mt-6 flex items-end gap-1"
       >
-        {Array.from({ length: 8 }, (_, i) => i < filled).map((on, i) => (
+        {segmentStates.map((state, i) => (
           <span
             key={i}
             style={{ animationDelay: `${i * 45}ms` }}
-            className={`h-7 flex-1 origin-bottom rounded-[2px] motion-safe:animate-[meter-in_0.45s_ease-out_both] ${
-              on ? (liveEdge && i === filled - 1 ? "bg-signal" : "bg-brand") : "bg-line/60"
-            }`}
+            className={`h-7 flex-1 origin-bottom rounded-[2px] motion-safe:animate-[meter-in_0.45s_ease-out_both] ${state}`}
           />
         ))}
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5">
         <p className="font-mono text-xs text-mute">
-          {attempts > 0
-            ? `${Math.round(rate * 100)}% of ${formatCount(attempts)} attempted`
-            : "No attempts today"}
+          {total > 0
+            ? `${Math.round((sent / total) * 100)}% of ${formatCount(total)} sent today`
+            : "No alerts yet today"}
         </p>
         <p className="text-xs text-mute">
           Sent — handed to WhatsApp · Queued — waiting · Failed — rejected · Skipped — held back
