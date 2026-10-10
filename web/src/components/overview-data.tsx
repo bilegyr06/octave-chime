@@ -379,15 +379,26 @@ return (
                     <Link
                       href={`/customers/${n.customerId}`}
                       title={n.customerName}
-                      className="flex items-center justify-between gap-3 px-5 py-3"
+                      className="block px-5 py-3 sm:flex sm:items-center sm:justify-between sm:gap-3"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-ink group-hover:text-brand">
-                          {n.customerName}
-                        </p>
-                        <p className="truncate font-mono text-xs text-mute">{n.recipient}</p>
+                      <div className="flex min-w-0 items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-ink group-hover:text-brand">
+                            {n.customerName}
+                          </p>
+                          <p className="truncate font-mono text-xs text-mute sm:hidden">
+                            {n.recipient}
+                            <span aria-hidden="true">
+                              {"\u00a0\u00b7\u00a0"}
+                              {notificationTypeLabel[n.type] ?? n.type}
+                            </span>
+                          </p>
+                        </div>
+                        <span className="sm:hidden">
+                          <StatusDot tone={status.tone} label={status.label} />
+                        </span>
                       </div>
-                      <div className="flex shrink-0 items-center gap-3">
+                      <div className="hidden shrink-0 items-center gap-3 sm:flex">
                         <Badge tone="brand">{notificationTypeLabel[n.type] ?? n.type}</Badge>
                         <StatusDot tone={status.tone} label={status.label} />
                         <span className="w-24 whitespace-nowrap text-right font-mono text-xs text-mute">
@@ -413,15 +424,25 @@ return (
                   key={c.id}
                   className="group flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-brand-soft/40"
                 >
-                  <Link href={`/customers/${c.id}`} title={c.fullName} className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink group-hover:text-brand">
-                      {c.fullName}
-                    </p>
-                    {c.whatsappPhone ? (
-                      <p className="font-mono text-xs text-mute">{c.whatsappPhone}</p>
-                    ) : null}
-                  </Link>
-                  <div className="flex shrink-0 items-center gap-3">
+                  <div className="min-w-0">
+                    <Link href={`/customers/${c.id}`} title={c.fullName}>
+                      <p className="truncate text-sm font-medium text-ink group-hover:text-brand">
+                        {c.fullName}
+                      </p>
+                      {c.whatsappPhone ? (
+                        <p className="font-mono text-xs text-mute">{c.whatsappPhone}</p>
+                      ) : null}
+                    </Link>
+                    <div className="mt-1 flex items-center gap-2 sm:hidden">
+                      <Badge tone={serviceStatusMap[c.serviceStatus]?.tone ?? "mute"}>
+                        {serviceStatusMap[c.serviceStatus]?.label ?? c.serviceStatus}
+                      </Badge>
+                      <span className="whitespace-nowrap font-mono text-xs text-mute">
+                        {formatDate(c.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="hidden shrink-0 items-center gap-3 sm:flex">
                     <Badge tone={serviceStatusMap[c.serviceStatus]?.tone ?? "mute"}>
                       {serviceStatusMap[c.serviceStatus]?.label ?? c.serviceStatus}
                     </Badge>
