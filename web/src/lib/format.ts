@@ -20,6 +20,16 @@ export function formatCount(n: number): string {
   return count.format(n);
 }
 
+export function formatLagosDate(value: number | Date): string {
+  const d = typeof value === "number" ? new Date(value) : value;
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Africa/Lagos",
+  }).format(d);
+}
+
 export function formatDate(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
   return new Intl.DateTimeFormat("en-NG", {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatCount, formatDate, formatGap, formatUpdated } from "@/lib/format";
+import { formatCount, formatDate, formatGap, formatLagosDate, formatUpdated } from "@/lib/format";
 import {
   notificationStatusMap,
   notificationTypeLabel,
@@ -314,7 +314,15 @@ export function OverviewData() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Overview</h1>
-          <p className="mt-1 text-sm text-mute">{metrics?.bank?.name}</p>
+          <p className="mt-1 text-sm text-mute">
+            {metrics?.bank?.name}
+            {metrics ? (
+              <>
+                <span aria-hidden="true"> · </span>
+                Today {formatLagosDate(now)} · West Africa Time
+              </>
+            ) : null}
+          </p>
         </div>
         {metrics ? (
           <div className="flex items-center gap-3">
