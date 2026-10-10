@@ -162,7 +162,7 @@ export function OverviewData() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-[28px] font-semibold tracking-tight text-ink">Overview</h1>
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-ink">Overview</h1>
           <p className="mt-1 text-sm text-mute">{metrics.bank?.name ?? "Platform"}</p>
         </div>
         <p className="text-xs text-mute">updated {formatDate(metrics.generatedAt)}</p>

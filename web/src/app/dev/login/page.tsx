@@ -16,9 +16,8 @@ export default async function DevLoginPage() {
         <Card className="overflow-hidden">
           <div className="px-7 pb-8 pt-7">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[3px] bg-brand-strong font-semibold text-lg text-paper">
-                ⌘
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/octave-logo.png" alt="Octave Chime" className="h-9 w-auto object-contain" />
               <div className="leading-tight">
                 <p className="font-display text-[15px] font-semibold tracking-tight text-ink">
                   Octave Chime

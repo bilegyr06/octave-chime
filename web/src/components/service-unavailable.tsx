@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AlertIcon } from "./icons";
 
 /**
  * Branded fallback for a transient service blip: the admin is still signed in
@@ -17,8 +18,8 @@ export function ServiceUnavailable({
   const router = useRouter();
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center gap-3 px-6 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-[3px] bg-warn-soft text-lg font-semibold text-warn">
-        ✕
+      <div className="flex h-11 w-11 items-center justify-center rounded-[3px] bg-warn-soft text-warn">
+        <AlertIcon className="h-5 w-5" />
       </div>
       <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
         Couldn&apos;t reach the service

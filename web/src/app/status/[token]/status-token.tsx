@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { CheckIcon } from "@/components/icons";
+import { Spinner } from "@/components/ui";
 import {
   consentStatusLabel,
   enrollmentStatusLabel,
@@ -121,19 +123,23 @@ export function StatusToken() {
   const tail = (accountNumber: string) => accountNumber.replace(/^\*+/, "").slice(-4);
 
   return (
-    <div className="flex min-h-full flex-col bg-reed font-sans">
-      <header className="border-b border-line bg-paper px-6 py-5">
-        <span className="text-sm font-semibold text-ink">
-          Octave&nbsp;Chime
-        </span>
+    <div className="flex min-h-dvh flex-col bg-reed font-sans">
+      <header className="border-b border-line bg-paper px-6 py-4">
+        <div className="mx-auto flex w-full max-w-md items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/octave-logo.png" alt="Octave Chime" className="h-7 w-auto object-contain" />
+          <span className="font-display text-[15px] font-semibold tracking-tight text-ink">
+            Octave Chime
+          </span>
+        </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-6 py-12">
-        {phase === "loading" && <p className="text-mute">Loading…</p>}
+        {phase === "loading" && <Spinner label="Loading your status" />}
 
         {phase === "ready" && error && (
-          <section className="rounded-[12px] border border-line bg-paper p-6 text-center">
-            <h1 className="text-lg font-semibold text-ink">{error.message}</h1>
+          <section className="rounded-[3px] border border-line bg-paper p-6 text-center">
+            <h1 className="font-display text-xl font-semibold tracking-tight text-ink">{error.message}</h1>
             <p className="mt-2 text-sm text-mute">
               Return to WhatsApp and start again if you need a fresh link.
             </p>
@@ -141,9 +147,9 @@ export function StatusToken() {
         )}
 
         {phase === "ready" && !error && context && (
-          <section className="rounded-[12px] border border-line bg-paper p-6">
+          <section className="rounded-[3px] border border-line bg-paper p-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-semibold text-ink">Account status</h1>
+              <h1 className="font-display text-xl font-semibold tracking-tight text-ink">Account status</h1>
               {context.bank?.logoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -158,7 +164,7 @@ export function StatusToken() {
               <div className="flex justify-between gap-4">
                 <dt className="text-mute">Bank</dt>
                 <dd className="font-medium text-ink">
-                  {context.bank?.name ?? "—"}
+                  {context.bank?.name ?? "Not set"}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
@@ -170,7 +176,7 @@ export function StatusToken() {
               <div className="flex justify-between gap-4">
                 <dt className="text-mute">WhatsApp</dt>
                 <dd className="font-medium text-ink">
-                  {context.customer.phoneMasked ?? "—"}
+                  {context.customer.phoneMasked ?? "Not set"}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
@@ -248,7 +254,7 @@ export function StatusToken() {
 
             <button
               onClick={() => setPhase("confirmed")}
-              className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong"
+              className="mt-6 h-11 w-full rounded-[3px] bg-brand text-sm font-medium text-paper transition-colors hover:bg-brand-strong active:translate-y-px"
             >
               Everything looks right
             </button>
@@ -256,8 +262,11 @@ export function StatusToken() {
         )}
 
         {phase === "confirmed" && (
-          <section className="rounded-[12px] border border-ok/30 bg-paper p-6 text-center">
-            <h1 className="text-lg font-semibold text-ok">All set</h1>
+          <section className="rounded-[3px] border border-ok/30 bg-paper p-6 text-center">
+            <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-[3px] bg-ok-soft text-ok">
+              <CheckIcon className="h-5 w-5" />
+            </div>
+            <h1 className="mt-3 font-display text-xl font-semibold tracking-tight text-ok">All set</h1>
             <p className="mt-1 text-sm text-mute">
               Your alerts and daily summary preferences are saved exactly as
               shown. You can close this page.

@@ -6,6 +6,7 @@
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   --color-canvas: #e9ede8;
+  --color-reed: #e2e8e1;
   --color-paper: #fafbf9;
   --color-ink: #11201b;
   --color-mute: #4f625a;
@@ -37,6 +38,11 @@
     outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
+
+  ::selection {
+    background: var(--color-brand-soft);
+    color: var(--color-brand-strong);
+  }
 }
 
 @layer utilities {
@@ -51,5 +57,16 @@
   }
   to {
     transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

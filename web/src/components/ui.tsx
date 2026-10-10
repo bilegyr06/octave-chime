@@ -146,7 +146,7 @@ export function StatTile({
 }
 
 export const inputClass =
-  "w-full rounded-[3px] border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-mute/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15";
+  "w-full rounded-[3px] border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-mute/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15";
 
 export function Switch({
   checked,
@@ -196,7 +196,7 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between gap-4 border-t border-line px-5 py-3">
       <p className="text-xs text-mute">
-        {from}–{to} of {total}
+        {from}-{to} of {total}
       </p>
       <div className="flex items-center gap-2">
         <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(page - 1)}>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { initials } from "@/lib/format";
 import type { BankProfile, SessionAdmin } from "@/lib/session";
@@ -120,6 +120,15 @@ export function DashboardShell({
     month: "short",
   }).format(new Date());
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <div className="min-h-dvh">
       {/* Desktop sidebar */}
@@ -136,7 +145,12 @@ export function DashboardShell({
             className="absolute inset-0 bg-ink/50"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-64 bg-brand-strong">
+          <aside
+            className="absolute inset-y-0 left-0 w-64 bg-brand-strong"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation"
+          >
             <button
               type="button"
               onClick={() => setOpen(false)}
