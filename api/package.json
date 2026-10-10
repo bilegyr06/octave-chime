@@ -16,6 +16,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "simulate:states": "tsx scripts/simulate-alert-states.ts",
     "mock:inbound": "node --env-file=.env scripts/mock-inbound.js",
     "summary:run": "node --env-file=.env scripts/daily-summary.js"
   },
