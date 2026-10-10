@@ -29,7 +29,7 @@ export async function getDashboardMetrics(
         where: { ...base, type: "transaction_alert", status: "queued", createdAt: { gte: start } },
       }),
       prisma.notification.count({
-        where: { ...base, status: "failed", createdAt: { gte: start } },
+        where: { ...base, type: "transaction_alert", status: "failed", createdAt: { gte: start } },
       }),
       prisma.notification.count({
         where: { ...base, type: "daily_summary", status: "sent", createdAt: { gte: start } },
