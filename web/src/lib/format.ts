@@ -34,6 +34,7 @@ export function formatUpdated(value: string | Date, now: number): string {
   const d = typeof value === "string" ? new Date(value) : value;
   const diffMs = Math.max(0, now - d.getTime());
   const seconds = Math.floor(diffMs / 1000);
+  if (seconds < 5) return "just now";
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;

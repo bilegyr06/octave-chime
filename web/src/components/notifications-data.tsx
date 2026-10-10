@@ -166,30 +166,46 @@ export function NotificationsData({ initialStatus = "" }: { initialStatus?: stri
               return (
                 <div
                   key={n.id}
-                  className="grid items-center gap-4 px-5 py-3 sm:grid-cols-[1fr_0.8fr_1.4fr_1.1fr_2.4fr_0.9fr]"
+                  className="grid items-center gap-1 px-5 py-3 sm:gap-4 sm:grid-cols-[1fr_0.8fr_1.4fr_1.1fr_2.4fr_0.9fr]"
                 >
-                  <span className="text-xs text-mute">{formatDate(n.createdAt)}</span>
-                  <Badge tone={n.type === "daily_summary" ? "mute" : "brand"}>
-                    {notificationTypeLabel[n.type] ?? n.type}
-                  </Badge>
-                  <Link
-                    href={`/customers/${n.customerId}`}
-                    className="truncate text-sm font-medium text-ink hover:text-brand"
-                  >
-                    {n.customerName}
-                  </Link>
-                  <span className="truncate font-mono text-xs text-ink">{n.recipient}</span>
-                  <span className="min-w-0" title={n.errorMessage ?? undefined}>
+                  <span className="text-xs text-mute">
+                    <span className="mr-2 text-xs font-medium text-mute sm:hidden">Time</span>
+                    {formatDate(n.createdAt)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-mute sm:hidden">Type</span>
+                    <Badge tone={n.type === "daily_summary" ? "mute" : "brand"}>
+                      {notificationTypeLabel[n.type] ?? n.type}
+                    </Badge>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="mr-2 text-xs font-medium text-mute sm:hidden">Customer</span>
+                    <Link
+                      href={`/customers/${n.customerId}`}
+                      className="truncate text-sm font-medium text-ink hover:text-brand"
+                    >
+                      {n.customerName}
+                    </Link>
+                  </div>
+                  <div className="min-w-0 truncate font-mono text-xs text-ink">
+                    <span className="mr-2 font-sans text-xs font-medium text-mute sm:hidden">
+                      Recipient
+                    </span>
+                    {n.recipient}
+                  </div>
+                  <div className="min-w-0" title={n.errorMessage ?? undefined}>
+                    <span className="mr-2 text-xs font-medium text-mute sm:hidden">Message</span>
                     <span className="block truncate text-sm text-ink">{n.messageBody}</span>
                     {n.errorMessage ? (
                       <span className="block truncate text-xs text-danger">{n.errorMessage}</span>
                     ) : null}
-                  </span>
+                  </div>
                   <span
                     className={`inline-flex items-center gap-2 text-xs font-medium text-ink ${
                       note.tone === "whatsapp" ? "text-ok" : ""
                     }`}
                   >
+                    <span className="text-xs font-medium text-mute sm:hidden">Status</span>
                     <span className={`h-2 w-2 rounded-full ${DOT_CLASS[note.tone] ?? "bg-line-strong"}`} />
                     {note.label}
                   </span>

@@ -317,7 +317,7 @@ export function OverviewData() {
         <Card className="overflow-hidden lg:col-span-3">
           <PanelHeader title="Recent delivery log" href="/notifications" led="whatsapp" />
           {metrics.recentDeliveryLog.length === 0 ? (
-            <EmptyState title="No deliveries yet" hint="Sent alerts will show up here." />
+            <EmptyState title="No deliveries yet" hint="Recent alerts will show up here." />
           ) : (
             <ul className="divide-y divide-line">
               {metrics.recentDeliveryLog.map((n) => {
@@ -341,7 +341,7 @@ return (
                       <div className="flex shrink-0 items-center gap-3">
                         <Badge tone="brand">{notificationTypeLabel[n.type] ?? n.type}</Badge>
                         <StatusDot tone={status.tone} label={status.label} />
-                        <span className="w-24 text-right font-mono text-xs text-mute">
+                        <span className="w-24 whitespace-nowrap text-right font-mono text-xs text-mute">
                           {formatDate(n.createdAt)}
                         </span>
                       </div>
@@ -376,7 +376,7 @@ return (
                     <Badge tone={serviceStatusMap[c.serviceStatus]?.tone ?? "mute"}>
                       {serviceStatusMap[c.serviceStatus]?.label ?? c.serviceStatus}
                     </Badge>
-                    <span className="w-24 text-right font-mono text-xs text-mute">
+                    <span className="w-24 whitespace-nowrap text-right font-mono text-xs text-mute">
                       {formatDate(c.createdAt)}
                     </span>
                   </div>
