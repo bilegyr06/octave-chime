@@ -219,7 +219,10 @@ export function OverviewData() {
     let cancelled = false;
     api<DashboardMetrics>("/api/dashboard/metrics")
       .then((m) => {
-        if (!cancelled) setMetrics(m);
+        if (!cancelled) {
+          setMetrics(m);
+          setError(null);
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load metrics");
@@ -238,7 +241,10 @@ export function OverviewData() {
       if (disposed || document.hidden) return;
       api<DashboardMetrics>("/api/dashboard/metrics")
         .then((m) => {
-          if (!disposed) setMetrics(m);
+          if (!disposed) {
+            setMetrics(m);
+            setError(null);
+          }
         })
         .catch(() => {});
     }, 45_000);
