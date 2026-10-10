@@ -46,12 +46,12 @@ const DOT_CLASS: Record<string, string> = {
   mute: "bg-line-strong",
 };
 
-export function NotificationsData() {
+export function NotificationsData({ initialStatus = "" }: { initialStatus?: string }) {
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [type, setType] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);

@@ -10,6 +10,7 @@ target_fingerprint: "sha256:2795b7c4606a81f002ef9ff8c4e90ccbe51e7363bf2bc50f132a
 target_path: "C:\\Users\\Deji\\Documents\\Coding\\WEB APPS\\Built with JS backend\\octave chime docs\\web\\src\\app\\(dashboard)\\overview\\page.tsx"
 timestamp: 2026-10-10T06-57-48Z
 slug: web-src-app-dashboard-overview-page-tsx
+closed: true
 ---
 # Critique — Bank-Admin Overview
 
